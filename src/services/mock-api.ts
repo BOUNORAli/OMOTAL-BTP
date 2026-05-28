@@ -24,6 +24,15 @@ export const authService = {
     await wait();
     return users;
   },
+
+  async login(email: string) {
+    await wait();
+    const user = users.find((item) => item.email === email) ?? users[0];
+    return {
+      token: "mock-token",
+      user,
+    };
+  },
 };
 
 export const chantierService = {

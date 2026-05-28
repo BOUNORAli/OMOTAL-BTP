@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: omotal-backend
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/omotal}
+    username: ${DATABASE_USERNAME:omotal}
+    password: ${DATABASE_PASSWORD:omotal}
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+omotal:
+  security:
+    jwt-secret: ${OMOTAL_JWT_SECRET:change-this-secret-in-production-change-this-secret}
+    jwt-expiration-minutes: ${OMOTAL_JWT_EXPIRATION_MINUTES:480}
+  app:
+    high-payment-threshold: ${OMOTAL_HIGH_PAYMENT_THRESHOLD:30000}
+    demo-data-enabled: ${OMOTAL_DEMO_DATA_ENABLED:true}
+    frontend-origin: ${OMOTAL_FRONTEND_ORIGIN:http://localhost:3000}
+
+springdoc:
+  swagger-ui:
+    path: /api/docs

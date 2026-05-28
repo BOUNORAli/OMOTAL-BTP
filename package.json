@@ -10,7 +10,10 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "backend:test": "mvn -f backend/pom.xml test",
+    "backend:dev": "mvn -f backend/pom.xml spring-boot:run",
+    "check": "npm.cmd run lint && npm.cmd run typecheck && npm.cmd run test && npm.cmd run backend:test"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

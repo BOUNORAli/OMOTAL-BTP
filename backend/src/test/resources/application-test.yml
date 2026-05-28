@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:omotal;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+omotal:
+  security:
+    jwt-secret: test-secret-test-secret-test-secret-test-secret
+    jwt-expiration-minutes: 60
+  app:
+    high-payment-threshold: 30000
+    demo-data-enabled: false
+    frontend-origin: http://localhost:3000

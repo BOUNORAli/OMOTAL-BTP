@@ -1,16 +1,26 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Wifi } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { MobileBottomNav } from "./mobile-bottom-nav";
 import { useChantiers } from "@/hooks/use-app-data";
+import { isBackendEnabled } from "@/services/api-client";
 import { useAppStore } from "@/stores/app-store";
 
 export function MobileShell({ children }: { children: ReactNode }) {
   const currentUser = useAppStore((state) => state.currentUser);
+  const authToken = useAppStore((state) => state.authToken);
   const selectedChantierId = useAppStore((state) => state.selectedChantierId);
+  const router = useRouter();
   const { data: chantiers = [] } = useChantiers();
   const chantier = chantiers.find((item) => item.id === selectedChantierId);
+
+  useEffect(() => {
+    if (isBackendEnabled() && !authToken) {
+      router.replace("/login");
+    }
+  }, [authToken, router]);
 
   return (
     <div className="min-h-screen bg-slate-100 pb-24">

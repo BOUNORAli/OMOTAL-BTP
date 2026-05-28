@@ -12,10 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { Toaster } from "@/components/ui/sonner";
 import {
   Hammer, Fuel, Truck, Home, ClipboardList, LogOut, Activity,
-  ArrowLeft, Plus, Save,
+  ArrowLeft, Plus, Save, LayoutDashboard,
 } from "lucide-react";
 import { formatNumber, formatDate, todayISO } from "@/lib/format";
 import { toast } from "sonner";
+import { ProductionDialog } from "@/pages/ProductionPage";
 
 export function MobileLayout() {
   const { user, logout } = useAuth();
@@ -42,6 +43,7 @@ export function MobileLayout() {
       </main>
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white border-t flex justify-around py-2 z-20">
         <BottomLink to="/mobile/accueil" icon={Home} label="Accueil" />
+        <BottomLink to="/mobile/production" icon={Hammer} label="Production" />
         <BottomLink to="/mobile/gasoil" icon={Fuel} label="Gasoil" />
         <BottomLink to="/mobile/engins" icon={Truck} label="Engins" />
         <BottomLink to="/mobile/historique" icon={ClipboardList} label="Historique" />
@@ -119,6 +121,14 @@ export function MobileHome() {
           <Truck className="h-8 w-8 mb-2" />
           <div className="font-bold text-left">Pointer engins</div>
           <div className="text-xs opacity-80 text-left mt-1">Heures du jour</div>
+        </button>
+        <button
+          onClick={() => navigate("/mobile/production")}
+          className="col-span-2 p-5 bg-emerald-600 text-white rounded-2xl shadow-md active:scale-95 transition"
+          data-testid="mobile-action-production">
+          <Hammer className="h-8 w-8 mb-2" />
+          <div className="font-bold text-left">Production terrain</div>
+          <div className="text-xs text-white/80 text-left mt-1">Voie, engin, dimensions → m³/m²</div>
         </button>
       </div>
 
@@ -312,6 +322,7 @@ export function MobileEnginsPointage() {
 
 export function MobileHistorique() {
   const { selectedId } = useChantier();
+  const navigate = useNavigate();
   const [sorties, setSorties] = useState([]);
   useEffect(() => {
     if (selectedId) {
@@ -320,7 +331,12 @@ export function MobileHistorique() {
   }, [selectedId]);
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-1">Historique</h1>
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-2xl font-bold">Historique</h1>
+        <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")} data-testid="open-bureau">
+          <LayoutDashboard className="h-4 w-4 mr-1" /> Vue bureau
+        </Button>
+      </div>
       <p className="text-sm text-muted-foreground mb-4">Vos dernières saisies gasoil</p>
       <div className="space-y-2">
         {sorties.length === 0 && <div className="text-center text-muted-foreground py-8">Aucune saisie</div>}
@@ -341,6 +357,76 @@ export function MobileHistorique() {
           </Card>
         ))}
       </div>
+    </div>
+  );
+}
+
+
+export function MobileProduction() {
+  const navigate = useNavigate();
+  const { selectedId, chantiers } = useChantier();
+  const [open, setOpen] = useState(true);
+  const [engins, setEngins] = useState([]);
+  const [voies, setVoies] = useState([]);
+  const [productions, setProductions] = useState([]);
+
+  const fetchAll = async () => {
+    if (!selectedId) return;
+    const [e, v, p] = await Promise.all([
+      api.get("/engins", { params: { chantier_id: selectedId } }),
+      api.get("/production/voies", { params: { chantier_id: selectedId } }),
+      api.get("/production", { params: { chantier_id: selectedId } }),
+    ]);
+    setEngins(e.data); setVoies(v.data); setProductions(p.data.slice(0, 15));
+  };
+
+  useEffect(() => { fetchAll(); /* eslint-disable-next-line */ }, [selectedId]);
+
+  return (
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Hammer className="h-6 w-6 text-emerald-600" /> Production
+        </h1>
+        <Button size="sm" onClick={() => setOpen(true)} className="bg-emerald-600 hover:bg-emerald-700"
+                data-testid="mobile-prod-new">
+          <Plus className="h-4 w-4 mr-1" /> Saisir
+        </Button>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">Dernières productions du chantier</p>
+
+      <div className="space-y-2">
+        {productions.length === 0 && (
+          <Card><CardContent className="py-8 text-center text-muted-foreground">
+            Aucune production. Cliquez sur Saisir pour commencer.
+          </CardContent></Card>
+        )}
+        {productions.map((p) => (
+          <Card key={p.id}>
+            <CardContent className="py-3">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium truncate">{p.voie || "—"} · {p.work_type}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatDate(p.date)} · {p.engin_name || "—"}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold">{formatNumber(p.quantity, 2)} {p.unit?.toLowerCase()}</div>
+                  <Badge variant="outline" className="text-[10px]">{p.status}</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <ProductionDialog
+        open={open} onOpenChange={(v) => { setOpen(v); if (!v) navigate("/mobile/accueil"); }}
+        onSaved={() => { setOpen(false); navigate("/mobile/accueil"); }}
+        defaultChantier={selectedId} chantiers={chantiers} engins={engins} voies={voies}
+        fullscreen
+      />
     </div>
   );
 }

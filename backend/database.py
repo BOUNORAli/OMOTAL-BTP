@@ -40,6 +40,12 @@ async def ensure_indexes():
         [("engin_id", 1), ("year", 1), ("month", 1)], unique=True
     )
     await db.alerts.create_index([("created_at", -1)])
+    await db.productions.create_index([("chantier_id", 1), ("date", -1)])
+    await db.voies.create_index([("chantier_id", 1), ("name", 1)])
+    await db.fournisseurs.create_index("name")
+    await db.achats_matieres.create_index([("chantier_id", 1), ("date", -1)])
+    await db.paiements_fournisseur.create_index([("achat_id", 1), ("date", -1)])
+    await db.bq_articles.create_index([("chantier_id", 1), ("numero", 1)])
 
 
 async def seed_initial_data():

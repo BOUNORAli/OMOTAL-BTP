@@ -1,493 +1,597 @@
-"""
-OMOTAL TRAVAUX - Backend API Test Suite
-Tests all critical endpoints with role-based access control
+"""Backend API tests for OMOTAL TRAVAUX Phase 3 features.
+Tests Production, Matières/Fournisseurs, and BQ modules.
 """
 import requests
 import sys
-import json
 from datetime import datetime, timedelta
 
 BASE_URL = "https://site-ops-hub-4.preview.emergentagent.com/api"
 
-class OMOTALTester:
+class Phase3Tester:
     def __init__(self):
-        self.tokens = {}
-        self.test_data = {}
         self.tests_run = 0
         self.tests_passed = 0
-        self.failed_tests = []
-
+        self.tokens = {}
+        self.test_data = {}
+        
     def log(self, msg, status="INFO"):
-        prefix = {
-            "PASS": "✅",
-            "FAIL": "❌",
-            "INFO": "🔍",
-            "WARN": "⚠️"
-        }.get(status, "ℹ️")
-        print(f"{prefix} {msg}")
-
-    def test(self, name, method, endpoint, expected_status, token=None, data=None, params=None):
-        """Run a single API test"""
+        prefix = {"INFO": "ℹ️", "PASS": "✅", "FAIL": "❌", "WARN": "⚠️"}
+        print(f"{prefix.get(status, 'ℹ️')} {msg}")
+    
+    def test(self, name, method, endpoint, expected_status, data=None, token=None, check_field=None):
+        """Run a single API test."""
         url = f"{BASE_URL}/{endpoint}"
         headers = {'Content-Type': 'application/json'}
         if token:
             headers['Authorization'] = f'Bearer {token}'
-
+        
         self.tests_run += 1
         self.log(f"Testing {name}...", "INFO")
         
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers, params=params, timeout=10)
+                response = requests.get(url, headers=headers, timeout=10)
             elif method == 'POST':
                 response = requests.post(url, json=data, headers=headers, timeout=10)
             elif method == 'PATCH':
                 response = requests.patch(url, json=data, headers=headers, timeout=10)
             elif method == 'DELETE':
                 response = requests.delete(url, headers=headers, timeout=10)
-            else:
-                raise ValueError(f"Unsupported method: {method}")
-
+            
             success = response.status_code == expected_status
             if success:
                 self.tests_passed += 1
-                self.log(f"PASS - {name} (Status: {response.status_code})", "PASS")
-                try:
-                    return True, response.json()
-                except:
-                    return True, {}
+                result = response.json() if response.text else {}
+                if check_field and check_field not in result:
+                    self.log(f"PASS but missing field '{check_field}' - Status: {response.status_code}", "WARN")
+                    return False, result
+                self.log(f"PASS - Status: {response.status_code}", "PASS")
+                return True, result
             else:
-                self.log(f"FAIL - {name} - Expected {expected_status}, got {response.status_code}", "FAIL")
-                self.log(f"Response: {response.text[:200]}", "WARN")
-                self.failed_tests.append({
-                    "name": name,
-                    "expected": expected_status,
-                    "actual": response.status_code,
-                    "response": response.text[:200]
-                })
+                self.log(f"FAIL - Expected {expected_status}, got {response.status_code}", "FAIL")
+                if response.text:
+                    self.log(f"Response: {response.text[:200]}", "INFO")
                 return False, {}
-
         except Exception as e:
-            self.log(f"FAIL - {name} - Error: {str(e)}", "FAIL")
-            self.failed_tests.append({
-                "name": name,
-                "error": str(e)
-            })
+            self.log(f"FAIL - Error: {str(e)}", "FAIL")
             return False, {}
-
-    def login(self, email, password):
-        """Login and store token"""
+    
+    def login(self, email, password, role_name):
+        """Login and store token."""
+        self.log(f"\n=== Logging in as {role_name} ({email}) ===", "INFO")
         success, response = self.test(
-            f"Login as {email}",
+            f"Login {role_name}",
             "POST",
             "auth/login",
             200,
             data={"email": email, "password": password}
         )
         if success and 'access_token' in response:
-            self.tokens[email] = response['access_token']
-            self.test_data[f"{email}_user"] = response.get('user', {})
+            self.tokens[role_name] = response['access_token']
             return True
         return False
-
-    def run_auth_tests(self):
-        """Test authentication endpoints"""
-        self.log("\n=== AUTH TESTS ===", "INFO")
+    
+    def test_production_module(self):
+        """Test Production & Rendements module."""
+        self.log("\n\n========== TESTING PRODUCTION MODULE ==========", "INFO")
         
-        # Test demo users endpoint
-        self.test("Get demo users", "GET", "auth/demo-users", 200)
+        token = self.tokens.get('SUPER_ADMIN')
+        if not token:
+            self.log("No SUPER_ADMIN token, skipping production tests", "WARN")
+            return
         
-        # Test valid login for all demo users
-        demo_users = [
-            "ali@omotal.ma",
-            "boubker@omotal.ma",
-            "ayoub@omotal.ma",
-            "comptable@omotal.ma",
-            "chef@omotal.ma",
-            "mecano@omotal.ma"
+        # 1. List productions
+        success, prods = self.test("GET /production", "GET", "production", 200, token=token)
+        
+        # 2. Get production summary
+        success, summary = self.test("GET /production/summary", "GET", "production/summary", 200, token=token)
+        if success:
+            # Check summary structure
+            if 'by_unit' in summary and 'by_engin' in summary and 'by_work_type' in summary and 'by_voie' in summary:
+                self.log("Summary structure correct (by_unit, by_engin, by_work_type, by_voie)", "PASS")
+                self.tests_passed += 1
+            else:
+                self.log("Summary missing required fields", "FAIL")
+            self.tests_run += 1
+            
+            # Check rendement in by_engin
+            if summary.get('by_engin') and len(summary['by_engin']) > 0:
+                if 'rendement' in summary['by_engin'][0]:
+                    self.log("Rendement field present in by_engin", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log("Rendement field missing in by_engin", "FAIL")
+                self.tests_run += 1
+        
+        # 3. List voies
+        success, voies = self.test("GET /production/voies", "GET", "production/voies", 200, token=token)
+        
+        # 4. Create voie
+        voie_data = {
+            "chantier_id": "test_chantier",
+            "name": f"Voie Test {datetime.now().strftime('%H%M%S')}",
+            "description": "Test voie"
+        }
+        success, voie = self.test("POST /production/voies", "POST", "production/voies", 200, data=voie_data, token=token)
+        if success:
+            self.test_data['voie_id'] = voie.get('id')
+        
+        # 5. Create production with auto-computed quantity (M3)
+        prod_data = {
+            "chantier_id": "test_chantier",
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "voie": "Voie 1",
+            "work_type": "DECAPAGE",
+            "unit": "M3",
+            "length": 10.0,
+            "width": 5.0,
+            "depth": 2.0,
+            "hours": 8.0
+        }
+        success, prod = self.test("POST /production (M3 auto-compute)", "POST", "production", 200, data=prod_data, token=token)
+        if success:
+            self.test_data['production_id'] = prod.get('id')
+            # Check auto-computed quantity (10*5*2 = 100)
+            if prod.get('quantity') == 100.0:
+                self.log("Quantity auto-computed correctly for M3 (10*5*2=100)", "PASS")
+                self.tests_passed += 1
+            else:
+                self.log(f"Quantity auto-compute FAIL: expected 100, got {prod.get('quantity')}", "FAIL")
+            self.tests_run += 1
+            
+            # Check rendement (100/8 = 12.5)
+            if prod.get('rendement') == 12.5:
+                self.log("Rendement computed correctly (100/8=12.5)", "PASS")
+                self.tests_passed += 1
+            else:
+                self.log(f"Rendement compute FAIL: expected 12.5, got {prod.get('rendement')}", "FAIL")
+            self.tests_run += 1
+            
+            # Check status is SOUMIS
+            if prod.get('status') == 'SOUMIS':
+                self.log("Production created with SOUMIS status", "PASS")
+                self.tests_passed += 1
+            else:
+                self.log(f"Status FAIL: expected SOUMIS, got {prod.get('status')}", "FAIL")
+            self.tests_run += 1
+        
+        # 6. Create production with M2 unit
+        prod_m2_data = {
+            "chantier_id": "test_chantier",
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "work_type": "REGLAGE",
+            "unit": "M2",
+            "length": 20.0,
+            "width": 3.0
+        }
+        success, prod_m2 = self.test("POST /production (M2 auto-compute)", "POST", "production", 200, data=prod_m2_data, token=token)
+        if success:
+            # Check auto-computed quantity (20*3 = 60)
+            if prod_m2.get('quantity') == 60.0:
+                self.log("Quantity auto-computed correctly for M2 (20*3=60)", "PASS")
+                self.tests_passed += 1
+            else:
+                self.log(f"M2 auto-compute FAIL: expected 60, got {prod_m2.get('quantity')}", "FAIL")
+            self.tests_run += 1
+        
+        # 7. Test POINTEUR creates SOUMIS
+        pointeur_token = self.tokens.get('POINTEUR')
+        if pointeur_token:
+            prod_pointeur = {
+                "chantier_id": "test_chantier",
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "work_type": "DEBLAI",
+                "unit": "M3",
+                "quantity": 50
+            }
+            success, prod_p = self.test("POST /production as POINTEUR", "POST", "production", 200, data=prod_pointeur, token=pointeur_token)
+            if success and prod_p.get('status') == 'SOUMIS':
+                self.log("POINTEUR creates production with SOUMIS status", "PASS")
+                self.tests_passed += 1
+                self.test_data['production_pointeur_id'] = prod_p.get('id')
+            else:
+                self.log("POINTEUR production status check FAIL", "FAIL")
+            self.tests_run += 1
+        
+        # 8. Test RESPONSABLE_CHANTIER validates production
+        chef_token = self.tokens.get('RESPONSABLE_CHANTIER')
+        if chef_token and self.test_data.get('production_pointeur_id'):
+            success, validated = self.test(
+                "POST /production/{id}/status as RESPONSABLE_CHANTIER",
+                "POST",
+                f"production/{self.test_data['production_pointeur_id']}/status",
+                200,
+                data={"status": "VALIDE"},
+                token=chef_token
+            )
+            if success and validated.get('status') == 'VALIDE':
+                self.log("RESPONSABLE_CHANTIER validates production successfully", "PASS")
+                self.tests_passed += 1
+            else:
+                self.log("Production validation FAIL", "FAIL")
+            self.tests_run += 1
+    
+    def test_matieres_module(self):
+        """Test Matières & Fournisseurs module."""
+        self.log("\n\n========== TESTING MATIERES MODULE ==========", "INFO")
+        
+        token = self.tokens.get('SUPER_ADMIN')
+        comptable_token = self.tokens.get('COMPTABLE')
+        
+        # 1. List fournisseurs
+        success, fournisseurs = self.test("GET /matieres/fournisseurs", "GET", "matieres/fournisseurs", 200, token=token)
+        
+        # 2. Create fournisseur (COMPTABLE)
+        if comptable_token:
+            fournisseur_data = {
+                "name": f"Fournisseur Test {datetime.now().strftime('%H%M%S')}",
+                "type": "MATIERE",
+                "contact": "Test Contact",
+                "phone": "0612345678",
+                "ice": "123456789"
+            }
+            success, fournisseur = self.test(
+                "POST /matieres/fournisseurs as COMPTABLE",
+                "POST",
+                "matieres/fournisseurs",
+                200,
+                data=fournisseur_data,
+                token=comptable_token
+            )
+            if success:
+                self.test_data['fournisseur_id'] = fournisseur.get('id')
+        
+        # 3. Create achat with auto-computed totals
+        if comptable_token and self.test_data.get('fournisseur_id'):
+            achat_data = {
+                "chantier_id": "test_chantier",
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "fournisseur_id": self.test_data['fournisseur_id'],
+                "designation": "Ciment test",
+                "unit": "T",
+                "quantity": 10,
+                "unit_price": 1000,
+                "transport_ht": 500,
+                "tva_rate": 20
+            }
+            success, achat = self.test(
+                "POST /matieres/achats",
+                "POST",
+                "matieres/achats",
+                200,
+                data=achat_data,
+                token=comptable_token
+            )
+            if success:
+                self.test_data['achat_id'] = achat.get('id')
+                
+                # Check computed totals
+                # total_ht = qty*pu + transport = 10*1000 + 500 = 10500
+                # total_tva = total_ht * tva_rate / 100 = 10500 * 20 / 100 = 2100
+                # total_ttc = total_ht + total_tva = 10500 + 2100 = 12600
+                expected_ht = 10500
+                expected_tva = 2100
+                expected_ttc = 12600
+                
+                if achat.get('total_ht') == expected_ht:
+                    self.log(f"total_ht computed correctly ({expected_ht})", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log(f"total_ht FAIL: expected {expected_ht}, got {achat.get('total_ht')}", "FAIL")
+                self.tests_run += 1
+                
+                if achat.get('total_tva') == expected_tva:
+                    self.log(f"total_tva computed correctly ({expected_tva})", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log(f"total_tva FAIL: expected {expected_tva}, got {achat.get('total_tva')}", "FAIL")
+                self.tests_run += 1
+                
+                if achat.get('total_ttc') == expected_ttc:
+                    self.log(f"total_ttc computed correctly ({expected_ttc})", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log(f"total_ttc FAIL: expected {expected_ttc}, got {achat.get('total_ttc')}", "FAIL")
+                self.tests_run += 1
+                
+                # Check initial payment status
+                if achat.get('payment_status') == 'NON_PAYE' and achat.get('montant_paye') == 0 and achat.get('montant_restant') == expected_ttc:
+                    self.log("Initial payment status correct (NON_PAYE, montant_paye=0, montant_restant=total_ttc)", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log("Initial payment status FAIL", "FAIL")
+                self.tests_run += 1
+        
+        # 4. Create partial payment
+        if comptable_token and self.test_data.get('achat_id'):
+            paiement_data = {
+                "achat_id": self.test_data['achat_id'],
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "amount": 5000,
+                "payment_mode": "BANQUE_OMOTAL"
+            }
+            success, paiement = self.test(
+                "POST /matieres/paiements (partial)",
+                "POST",
+                "matieres/paiements",
+                200,
+                data=paiement_data,
+                token=comptable_token
+            )
+            if success:
+                self.test_data['paiement_id'] = paiement.get('id')
+                
+                # Check achat updated
+                success2, achat_updated = self.test(
+                    "GET /matieres/achats (check payment update)",
+                    "GET",
+                    "matieres/achats",
+                    200,
+                    token=comptable_token
+                )
+                if success2:
+                    achat_obj = next((a for a in achat_updated if a['id'] == self.test_data['achat_id']), None)
+                    if achat_obj:
+                        if achat_obj.get('payment_status') == 'PARTIEL':
+                            self.log("Payment status updated to PARTIEL", "PASS")
+                            self.tests_passed += 1
+                        else:
+                            self.log(f"Payment status FAIL: expected PARTIEL, got {achat_obj.get('payment_status')}", "FAIL")
+                        self.tests_run += 1
+                        
+                        if achat_obj.get('montant_paye') == 5000:
+                            self.log("montant_paye updated correctly (5000)", "PASS")
+                            self.tests_passed += 1
+                        else:
+                            self.log(f"montant_paye FAIL: expected 5000, got {achat_obj.get('montant_paye')}", "FAIL")
+                        self.tests_run += 1
+                        
+                        if achat_obj.get('montant_restant') == 7600:
+                            self.log("montant_restant updated correctly (7600)", "PASS")
+                            self.tests_passed += 1
+                        else:
+                            self.log(f"montant_restant FAIL: expected 7600, got {achat_obj.get('montant_restant')}", "FAIL")
+                        self.tests_run += 1
+        
+        # 5. Complete payment
+        if comptable_token and self.test_data.get('achat_id'):
+            paiement_final = {
+                "achat_id": self.test_data['achat_id'],
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "amount": 7600,
+                "payment_mode": "BANQUE_OMOTAL"
+            }
+            success, paiement2 = self.test(
+                "POST /matieres/paiements (complete)",
+                "POST",
+                "matieres/paiements",
+                200,
+                data=paiement_final,
+                token=comptable_token
+            )
+            if success:
+                # Check achat status is PAYE
+                success2, achat_updated = self.test(
+                    "GET /matieres/achats (check PAYE status)",
+                    "GET",
+                    "matieres/achats",
+                    200,
+                    token=comptable_token
+                )
+                if success2:
+                    achat_obj = next((a for a in achat_updated if a['id'] == self.test_data['achat_id']), None)
+                    if achat_obj and achat_obj.get('payment_status') == 'PAYE':
+                        self.log("Payment status updated to PAYE after full payment", "PASS")
+                        self.tests_passed += 1
+                    else:
+                        self.log("Payment status FAIL: expected PAYE", "FAIL")
+                    self.tests_run += 1
+        
+        # 6. Get situations
+        success, situations = self.test("GET /matieres/situations", "GET", "matieres/situations", 200, token=token)
+        if success and len(situations) > 0:
+            # Check structure
+            if 'total_ttc' in situations[0] and 'total_paye' in situations[0] and 'total_restant' in situations[0]:
+                self.log("Situations structure correct (total_ttc, total_paye, total_restant)", "PASS")
+                self.tests_passed += 1
+            else:
+                self.log("Situations structure FAIL", "FAIL")
+            self.tests_run += 1
+        
+        # 7. Get situation detail
+        if self.test_data.get('fournisseur_id'):
+            success, situation = self.test(
+                "GET /matieres/situation/{fournisseur_id}",
+                "GET",
+                f"matieres/situation/{self.test_data['fournisseur_id']}",
+                200,
+                token=token
+            )
+            if success:
+                if 'fournisseur' in situation and 'achats' in situation and 'paiements' in situation:
+                    self.log("Situation detail structure correct", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log("Situation detail structure FAIL", "FAIL")
+                self.tests_run += 1
+    
+    def test_bq_module(self):
+        """Test BQ & Rentabilité module."""
+        self.log("\n\n========== TESTING BQ MODULE ==========", "INFO")
+        
+        token = self.tokens.get('SUPER_ADMIN')
+        directeur_token = self.tokens.get('DIRECTEUR')
+        comptable_token = self.tokens.get('COMPTABLE')
+        
+        # 1. List articles
+        success, articles = self.test("GET /bq/articles", "GET", "bq/articles", 200, token=token)
+        
+        # 2. Create article with auto-computed marge
+        article_data = {
+            "chantier_id": "test_chantier",
+            "numero": f"TEST-{datetime.now().strftime('%H%M%S')}",
+            "designation": "Article test BQ",
+            "unit": "M3",
+            "quantity_marche": 1000,
+            "pu_marche_ht": 500,
+            "pr_main_oeuvre": 100000,
+            "pr_materiaux": 150000,
+            "pr_engins": 80000,
+            "pr_sous_traitance": 50000,
+            "frais_generaux": 20000
+        }
+        success, article = self.test("POST /bq/articles", "POST", "bq/articles", 200, data=article_data, token=token)
+        if success:
+            self.test_data['article_id'] = article.get('id')
+            
+            # Check computed fields
+            # montant_marche_ht = qty * pu = 1000 * 500 = 500000
+            # pr_total = 100000 + 150000 + 80000 + 50000 + 20000 = 400000
+            # marge_prevue = montant_marche_ht - pr_total = 500000 - 400000 = 100000
+            expected_montant = 500000
+            expected_pr_total = 400000
+            expected_marge = 100000
+            
+            if article.get('montant_marche_ht') == expected_montant:
+                self.log(f"montant_marche_ht computed correctly ({expected_montant})", "PASS")
+                self.tests_passed += 1
+            else:
+                self.log(f"montant_marche_ht FAIL: expected {expected_montant}, got {article.get('montant_marche_ht')}", "FAIL")
+            self.tests_run += 1
+            
+            if article.get('pr_total') == expected_pr_total:
+                self.log(f"pr_total computed correctly ({expected_pr_total})", "PASS")
+                self.tests_passed += 1
+            else:
+                self.log(f"pr_total FAIL: expected {expected_pr_total}, got {article.get('pr_total')}", "FAIL")
+            self.tests_run += 1
+            
+            if article.get('marge_prevue') == expected_marge:
+                self.log(f"marge_prevue computed correctly ({expected_marge})", "PASS")
+                self.tests_passed += 1
+            else:
+                self.log(f"marge_prevue FAIL: expected {expected_marge}, got {article.get('marge_prevue')}", "FAIL")
+            self.tests_run += 1
+        
+        # 3. Update article with quantity_realisee and cout_reel
+        if self.test_data.get('article_id'):
+            update_data = {
+                "quantity_realisee": 500,
+                "cout_reel": 180000
+            }
+            success, updated = self.test(
+                "PATCH /bq/articles/{id}",
+                "PATCH",
+                f"bq/articles/{self.test_data['article_id']}",
+                200,
+                data=update_data,
+                token=token
+            )
+            if success:
+                # Check recomputed fields
+                # avancement = (500 / 1000) * 100 = 50%
+                # montant_realise = 500 * 500 = 250000
+                # marge_reelle = montant_realise - cout_reel = 250000 - 180000 = 70000
+                # taux_marge_reel = (70000 / 250000) * 100 = 28%
+                expected_avancement = 50.0
+                expected_montant_realise = 250000
+                expected_marge_reelle = 70000
+                expected_taux = 28.0
+                
+                if updated.get('avancement') == expected_avancement:
+                    self.log(f"avancement computed correctly ({expected_avancement}%)", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log(f"avancement FAIL: expected {expected_avancement}, got {updated.get('avancement')}", "FAIL")
+                self.tests_run += 1
+                
+                if updated.get('montant_realise') == expected_montant_realise:
+                    self.log(f"montant_realise computed correctly ({expected_montant_realise})", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log(f"montant_realise FAIL: expected {expected_montant_realise}, got {updated.get('montant_realise')}", "FAIL")
+                self.tests_run += 1
+                
+                if updated.get('marge_reelle') == expected_marge_reelle:
+                    self.log(f"marge_reelle computed correctly ({expected_marge_reelle})", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log(f"marge_reelle FAIL: expected {expected_marge_reelle}, got {updated.get('marge_reelle')}", "FAIL")
+                self.tests_run += 1
+                
+                if updated.get('taux_marge_reel') == expected_taux:
+                    self.log(f"taux_marge_reel computed correctly ({expected_taux}%)", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log(f"taux_marge_reel FAIL: expected {expected_taux}, got {updated.get('taux_marge_reel')}", "FAIL")
+                self.tests_run += 1
+        
+        # 4. Test BQ summary permission check
+        # SUPER_ADMIN should see marge_reelle
+        success, summary_admin = self.test("GET /bq/summary as SUPER_ADMIN", "GET", "bq/summary", 200, token=token)
+        if success:
+            if 'marge_reelle' in summary_admin:
+                self.log("SUPER_ADMIN can see marge_reelle in summary", "PASS")
+                self.tests_passed += 1
+            else:
+                self.log("SUPER_ADMIN cannot see marge_reelle - FAIL", "FAIL")
+            self.tests_run += 1
+        
+        # DIRECTEUR should see marge_reelle
+        if directeur_token:
+            success, summary_dir = self.test("GET /bq/summary as DIRECTEUR", "GET", "bq/summary", 200, token=directeur_token)
+            if success:
+                if 'marge_reelle' in summary_dir:
+                    self.log("DIRECTEUR can see marge_reelle in summary", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log("DIRECTEUR cannot see marge_reelle - FAIL", "FAIL")
+                self.tests_run += 1
+        
+        # COMPTABLE should NOT see marge_reelle
+        if comptable_token:
+            success, summary_compta = self.test("GET /bq/summary as COMPTABLE", "GET", "bq/summary", 200, token=comptable_token)
+            if success:
+                if 'marge_reelle' not in summary_compta:
+                    self.log("COMPTABLE correctly cannot see marge_reelle in summary", "PASS")
+                    self.tests_passed += 1
+                else:
+                    self.log("COMPTABLE can see marge_reelle - PERMISSION FAIL", "FAIL")
+                self.tests_run += 1
+    
+    def run_all_tests(self):
+        """Run all Phase 3 tests."""
+        self.log("\n" + "="*60, "INFO")
+        self.log("OMOTAL TRAVAUX - Phase 3 Backend Tests", "INFO")
+        self.log("="*60 + "\n", "INFO")
+        
+        # Login all users
+        users = [
+            ("ali@omotal.ma", "omotal123", "SUPER_ADMIN"),
+            ("boubker@omotal.ma", "omotal123", "DIRECTEUR"),
+            ("ayoub@omotal.ma", "omotal123", "POINTEUR"),
+            ("comptable@omotal.ma", "omotal123", "COMPTABLE"),
+            ("chef@omotal.ma", "omotal123", "RESPONSABLE_CHANTIER"),
         ]
         
-        for email in demo_users:
-            if not self.login(email, "omotal123"):
-                self.log(f"Failed to login {email}", "FAIL")
-                return False
+        for email, password, role in users:
+            if not self.login(email, password, role):
+                self.log(f"Failed to login {role}, some tests will be skipped", "WARN")
         
-        # Test invalid login
-        self.test("Login with invalid credentials", "POST", "auth/login", 401,
-                 data={"email": "wrong@test.com", "password": "wrong"})
+        # Run module tests
+        self.test_production_module()
+        self.test_matieres_module()
+        self.test_bq_module()
         
-        # Test /me endpoint
-        ali_token = self.tokens.get("ali@omotal.ma")
-        success, me_data = self.test("Get current user (Ali)", "GET", "auth/me", 200, token=ali_token)
-        if success and 'permissions' in me_data:
-            self.log(f"Ali has {len(me_data.get('permissions', []))} permissions", "INFO")
-        
-        return True
-
-    def run_chantiers_tests(self):
-        """Test chantiers endpoints"""
-        self.log("\n=== CHANTIERS TESTS ===", "INFO")
-        
-        ali_token = self.tokens.get("ali@omotal.ma")
-        ayoub_token = self.tokens.get("ayoub@omotal.ma")
-        
-        # Test list chantiers (Ali sees all, Ayoub sees only assigned)
-        success, ali_chantiers = self.test("List chantiers (Ali - SUPER_ADMIN)", "GET", "chantiers", 200, token=ali_token)
-        success2, ayoub_chantiers = self.test("List chantiers (Ayoub - POINTEUR)", "GET", "chantiers", 200, token=ayoub_token)
-        
-        if success and success2:
-            self.log(f"Ali sees {len(ali_chantiers)} chantiers, Ayoub sees {len(ayoub_chantiers)} chantiers", "INFO")
-            if len(ali_chantiers) > len(ayoub_chantiers):
-                self.log("Role-based filtering working correctly", "PASS")
-                self.tests_passed += 1
-            self.test_data['chantiers'] = ali_chantiers
-            if ali_chantiers:
-                self.test_data['chantier_id'] = ali_chantiers[0]['id']
-        
-        # Test create chantier (Ali can, Ayoub cannot)
-        new_chantier = {
-            "name": f"Test Chantier {datetime.now().strftime('%H%M%S')}",
-            "code": f"TEST-{datetime.now().strftime('%H%M%S')}",
-            "status": "EN_COURS",
-            "localisation": "Test Location"
-        }
-        success, created = self.test("Create chantier (Ali)", "POST", "chantiers", 200, token=ali_token, data=new_chantier)
-        if success:
-            self.test_data['test_chantier_id'] = created.get('id')
-        
-        # Test permission enforcement - POINTEUR cannot create chantier
-        self.test("Create chantier (Ayoub - should fail 403)", "POST", "chantiers", 403, token=ayoub_token, data=new_chantier)
-
-    def run_caisse_tests(self):
-        """Test caisse/transactions endpoints"""
-        self.log("\n=== CAISSE TESTS ===", "INFO")
-        
-        comptable_token = self.tokens.get("comptable@omotal.ma")
-        boubker_token = self.tokens.get("boubker@omotal.ma")
-        ayoub_token = self.tokens.get("ayoub@omotal.ma")
-        chantier_id = self.test_data.get('chantier_id')
-        
-        if not chantier_id:
-            self.log("No chantier_id available, skipping caisse tests", "WARN")
-            return
-        
-        # Test list transactions
-        self.test("List transactions", "GET", "caisse", 200, token=comptable_token)
-        
-        # Test get summary
-        self.test("Get caisse summary", "GET", "caisse/summary", 200, token=comptable_token, params={"chantier_id": chantier_id})
-        
-        # Test create low amount transaction (auto-validated)
-        low_txn = {
-            "chantier_id": chantier_id,
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "type": "DEBIT",
-            "amount": 5000,
-            "payment_mode": "ESPECES_OMOTAL",
-            "category": "divers",
-            "description": "Test transaction low amount"
-        }
-        success, low_result = self.test("Create low amount transaction", "POST", "caisse", 200, token=comptable_token, data=low_txn)
-        if success and low_result.get('status') == 'VALIDE':
-            self.log("Low amount transaction auto-validated", "PASS")
-            self.tests_passed += 1
-        
-        # Test create high amount transaction (needs approval)
-        high_txn = {
-            "chantier_id": chantier_id,
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "type": "DEBIT",
-            "amount": 15000,
-            "payment_mode": "BANQUE_OMOTAL",
-            "category": "location_engins",
-            "description": "Test high payment - needs approval"
-        }
-        success, high_result = self.test("Create high amount transaction (≥10000)", "POST", "caisse", 200, token=comptable_token, data=high_txn)
-        if success:
-            if high_result.get('status') == 'SOUMIS' and high_result.get('needs_approval'):
-                self.log("High amount transaction requires approval (SOUMIS status)", "PASS")
-                self.tests_passed += 1
-                txn_id = high_result.get('id')
-                
-                # Test validation by DIRECTEUR
-                if txn_id:
-                    validate_payload = {"status": "VALIDE"}
-                    self.test("Validate high payment (Boubker - DIRECTEUR)", "POST", f"caisse/{txn_id}/status", 200, token=boubker_token, data=validate_payload)
-        
-        # Test permission enforcement - POINTEUR cannot create transaction
-        self.test("Create transaction (Ayoub - should fail 403)", "POST", "caisse", 403, token=ayoub_token, data=low_txn)
-
-    def run_gasoil_tests(self):
-        """Test gasoil endpoints"""
-        self.log("\n=== GASOIL TESTS ===", "INFO")
-        
-        comptable_token = self.tokens.get("comptable@omotal.ma")
-        ayoub_token = self.tokens.get("ayoub@omotal.ma")
-        chef_token = self.tokens.get("chef@omotal.ma")
-        chantier_id = self.test_data.get('chantier_id')
-        
-        if not chantier_id:
-            self.log("No chantier_id available, skipping gasoil tests", "WARN")
-            return
-        
-        # Get engins first
-        success, engins = self.test("List engins", "GET", "engins", 200, token=comptable_token, params={"chantier_id": chantier_id})
-        if success and engins:
-            self.test_data['engin_id'] = engins[0]['id']
-        
-        # Test create gasoil entree
-        entree = {
-            "chantier_id": chantier_id,
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "fournisseur": "Station Test",
-            "litres": 500,
-            "unit_price": 13.5,
-            "br_number": f"BR-TEST-{datetime.now().strftime('%H%M%S')}"
-        }
-        success, entree_result = self.test("Create gasoil entree", "POST", "gasoil/entrees", 200, token=comptable_token, data=entree)
-        if success and entree_result.get('total_amount'):
-            expected_total = 500 * 13.5
-            actual_total = entree_result.get('total_amount')
-            if abs(actual_total - expected_total) < 0.01:
-                self.log(f"Total amount computed correctly: {actual_total} MAD", "PASS")
-                self.tests_passed += 1
-        
-        # Test get stock
-        success, stock = self.test("Get gasoil stock", "GET", "gasoil/stock", 200, token=comptable_token, params={"chantier_id": chantier_id})
-        if success:
-            self.log(f"Stock théorique: {stock.get('stock_theorique', 0)} L", "INFO")
-        
-        # Test create sortie by POINTEUR (should be SOUMIS)
-        engin_id = self.test_data.get('engin_id')
-        if engin_id:
-            sortie = {
-                "chantier_id": chantier_id,
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "engin_id": engin_id,
-                "litres": 50,
-                "affectation": "PRODUCTION"
-            }
-            success, sortie_result = self.test("Create gasoil sortie (Ayoub - POINTEUR)", "POST", "gasoil/sorties", 200, token=ayoub_token, data=sortie)
-            if success and sortie_result.get('status') == 'SOUMIS':
-                self.log("Sortie created with SOUMIS status (needs validation)", "PASS")
-                self.tests_passed += 1
-                sortie_id = sortie_result.get('id')
-                
-                # Test validation by RESPONSABLE_CHANTIER
-                if sortie_id:
-                    validate_payload = {"status": "VALIDE"}
-                    self.test("Validate sortie (Chef - RESPONSABLE_CHANTIER)", "POST", f"gasoil/sorties/{sortie_id}/status", 200, token=chef_token, data=validate_payload)
-
-    def run_personnel_tests(self):
-        """Test personnel endpoints"""
-        self.log("\n=== PERSONNEL TESTS ===", "INFO")
-        
-        comptable_token = self.tokens.get("comptable@omotal.ma")
-        chantier_id = self.test_data.get('chantier_id')
-        
-        if not chantier_id:
-            self.log("No chantier_id available, skipping personnel tests", "WARN")
-            return
-        
-        # Test create employee
-        employee = {
-            "name": f"Test Employee {datetime.now().strftime('%H%M%S')}",
-            "poste": "Ouvrier",
-            "chantier_id": chantier_id,
-            "remuneration_type": "JOUR",
-            "salaire_journalier": 200.0
-        }
-        success, emp_result = self.test("Create employee", "POST", "personnel/employees", 200, token=comptable_token, data=employee)
-        if success:
-            employee_id = emp_result.get('id')
-            self.test_data['employee_id'] = employee_id
-            
-            # Test create pointage
-            pointage = {
-                "employee_id": employee_id,
-                "chantier_id": chantier_id,
-                "year": 2026,
-                "month": 8,
-                "entries": [
-                    {"day": 1, "hours": 9, "day_type": "NORMAL"},
-                    {"day": 2, "hours": 9, "day_type": "NORMAL"},
-                    {"day": 3, "hours": 9, "day_type": "NORMAL"},
-                    {"day": 4, "hours": 9, "day_type": "NORMAL"},
-                    {"day": 5, "hours": 9, "day_type": "NORMAL"}
-                ]
-            }
-            success, pointage_result = self.test("Create personnel pointage", "POST", "personnel/pointage", 200, token=comptable_token, data=pointage)
-            if success:
-                total_days = pointage_result.get('total_days', 0)
-                salaire_du = pointage_result.get('salaire_du', 0)
-                expected_salaire = 5 * 200.0  # 5 days * 200 MAD
-                if abs(salaire_du - expected_salaire) < 0.01:
-                    self.log(f"Salary computed correctly: {salaire_du} MAD for {total_days} days", "PASS")
-                    self.tests_passed += 1
-            
-            # Test create avance (should auto-create transaction)
-            avance = {
-                "employee_id": employee_id,
-                "chantier_id": chantier_id,
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "amount": 500.0,
-                "payment_mode": "ESPECES_OMOTAL",
-                "motif": "Avance test"
-            }
-            success, avance_result = self.test("Create avance (auto-creates transaction)", "POST", "personnel/avances", 200, token=comptable_token, data=avance)
-            if success:
-                self.log("Avance created successfully", "PASS")
-
-    def run_engins_tests(self):
-        """Test engins endpoints"""
-        self.log("\n=== ENGINS TESTS ===", "INFO")
-        
-        comptable_token = self.tokens.get("comptable@omotal.ma")
-        chantier_id = self.test_data.get('chantier_id')
-        
-        if not chantier_id:
-            self.log("No chantier_id available, skipping engins tests", "WARN")
-            return
-        
-        # Get existing engin
-        success, engins = self.test("List engins", "GET", "engins", 200, token=comptable_token, params={"chantier_id": chantier_id})
-        if success and engins:
-            engin_id = engins[0]['id']
-            engin = engins[0]
-            
-            # Test create engin pointage
-            pointage = {
-                "engin_id": engin_id,
-                "chantier_id": chantier_id,
-                "year": 2026,
-                "month": 8,
-                "entries": [
-                    {"day": 1, "hours": 8, "days_count": 1},
-                    {"day": 2, "hours": 8, "days_count": 1},
-                    {"day": 3, "hours": 8, "days_count": 1}
-                ]
-            }
-            success, pointage_result = self.test("Create engin pointage", "POST", "engins/pointage", 200, token=comptable_token, data=pointage)
-            if success:
-                montant_du = pointage_result.get('montant_du', 0)
-                mode = engin.get('facturation_mode')
-                if mode == 'HEURE':
-                    expected = 24 * engin.get('tarif_horaire', 0)
-                elif mode == 'JOUR':
-                    expected = 3 * engin.get('tarif_journalier', 0)
-                else:
-                    expected = 0
-                self.log(f"Montant dû computed: {montant_du} MAD (mode: {mode})", "INFO")
-            
-            # Test create paiement (should auto-create transaction)
-            paiement = {
-                "engin_id": engin_id,
-                "chantier_id": chantier_id,
-                "date": datetime.now().strftime("%Y-%m-%d"),
-                "amount": 5000.0,
-                "payment_mode": "BANQUE_OMOTAL",
-                "period_ref": "2026-08"
-            }
-            success, paiement_result = self.test("Create engin paiement (auto-creates transaction)", "POST", "engins/paiements", 200, token=comptable_token, data=paiement)
-
-    def run_dashboard_tests(self):
-        """Test dashboard endpoints"""
-        self.log("\n=== DASHBOARD TESTS ===", "INFO")
-        
-        ali_token = self.tokens.get("ali@omotal.ma")
-        chantier_id = self.test_data.get('chantier_id')
-        
-        # Test global dashboard
-        success, global_dash = self.test("Get global dashboard", "GET", "dashboard/global", 200, token=ali_token)
-        if success:
-            kpis = global_dash.get('kpis', {})
-            self.log(f"Global KPIs: {kpis.get('active_chantiers')} active chantiers, {kpis.get('stock_gasoil_total')} L gasoil", "INFO")
-            if 'chantier_cards' in global_dash:
-                self.log(f"Chantier cards: {len(global_dash['chantier_cards'])}", "INFO")
-        
-        # Test chantier dashboard
-        if chantier_id:
-            success, chantier_dash = self.test("Get chantier dashboard", "GET", f"dashboard/chantier/{chantier_id}", 200, token=ali_token)
-            if success:
-                self.log(f"Chantier dashboard loaded with caisse, gasoil, engins, personnel data", "INFO")
-
-    def run_validations_tests(self):
-        """Test validations endpoint"""
-        self.log("\n=== VALIDATIONS TESTS ===", "INFO")
-        
-        ali_token = self.tokens.get("ali@omotal.ma")
-        
-        success, pending = self.test("Get pending validations", "GET", "validations/pending", 200, token=ali_token)
-        if success:
-            items = pending.get('items', [])
-            self.log(f"Pending validations: {len(items)} items", "INFO")
-            for item in items[:3]:
-                self.log(f"  - {item.get('type')}: {item.get('summary', '')[:60]}", "INFO")
-
-    def run_alerts_tests(self):
-        """Test alerts endpoint"""
-        self.log("\n=== ALERTS TESTS ===", "INFO")
-        
-        ali_token = self.tokens.get("ali@omotal.ma")
-        
-        success, alerts = self.test("Get alerts", "GET", "alertes", 200, token=ali_token)
-        if success:
-            items = alerts.get('items', [])
-            self.log(f"Alerts generated: {len(items)} items", "INFO")
-            for alert in items[:3]:
-                self.log(f"  - [{alert.get('severity')}] {alert.get('title')}", "INFO")
-
-    def run_excel_tests(self):
-        """Test Excel export endpoints"""
-        self.log("\n=== EXCEL TESTS ===", "INFO")
-        
-        comptable_token = self.tokens.get("comptable@omotal.ma")
-        chantier_id = self.test_data.get('chantier_id')
-        
-        # Test export transactions
-        success, _ = self.test("Export transactions to Excel", "GET", "excel/export/transactions", 200, token=comptable_token, params={"chantier_id": chantier_id})
-        
-        # Test export gasoil
-        success, _ = self.test("Export gasoil to Excel", "GET", "excel/export/gasoil", 200, token=comptable_token, params={"chantier_id": chantier_id})
-
-    def print_summary(self):
-        """Print test summary"""
+        # Print summary
         self.log("\n" + "="*60, "INFO")
         self.log(f"TESTS COMPLETED: {self.tests_passed}/{self.tests_run} passed", "INFO")
         success_rate = (self.tests_passed / self.tests_run * 100) if self.tests_run > 0 else 0
-        self.log(f"SUCCESS RATE: {success_rate:.1f}%", "INFO")
-        
-        if self.failed_tests:
-            self.log(f"\n{len(self.failed_tests)} FAILED TESTS:", "FAIL")
-            for fail in self.failed_tests[:10]:
-                self.log(f"  - {fail.get('name')}: {fail.get('error', '')} {fail.get('response', '')[:100]}", "FAIL")
+        self.log(f"Success Rate: {success_rate:.1f}%", "INFO")
+        self.log("="*60 + "\n", "INFO")
         
         return 0 if self.tests_passed == self.tests_run else 1
 
-
-def main():
-    tester = OMOTALTester()
-    
-    try:
-        # Run all test suites
-        tester.run_auth_tests()
-        tester.run_chantiers_tests()
-        tester.run_caisse_tests()
-        tester.run_gasoil_tests()
-        tester.run_personnel_tests()
-        tester.run_engins_tests()
-        tester.run_dashboard_tests()
-        tester.run_validations_tests()
-        tester.run_alerts_tests()
-        tester.run_excel_tests()
-        
-    except Exception as e:
-        tester.log(f"Fatal error during testing: {str(e)}", "FAIL")
-        import traceback
-        traceback.print_exc()
-    
-    return tester.print_summary()
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    tester = Phase3Tester()
+    sys.exit(tester.run_all_tests())

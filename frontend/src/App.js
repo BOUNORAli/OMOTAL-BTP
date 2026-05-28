@@ -21,9 +21,12 @@ import ValidationsPage from "@/pages/ValidationsPage";
 import AlertesPage from "@/pages/AlertesPage";
 import ExcelPage from "@/pages/ExcelPage";
 import AdminPage from "@/pages/AdminPage";
+import ProductionPage from "@/pages/ProductionPage";
+import MatieresPage from "@/pages/MatieresPage";
+import BQPage from "@/pages/BQPage";
 import {
   MobileLayout, MobileHome, MobileGasoilSortie,
-  MobileEnginsPointage, MobileHistorique,
+  MobileEnginsPointage, MobileHistorique, MobileProduction,
 } from "@/pages/MobilePages";
 
 function RootRedirect() {
@@ -49,6 +52,7 @@ function App() {
               <Route path="/mobile/gasoil/sortie" element={<MobileGasoilSortie />} />
               <Route path="/mobile/engins" element={<MobileEnginsPointage />} />
               <Route path="/mobile/engins/pointage" element={<MobileEnginsPointage />} />
+              <Route path="/mobile/production" element={<MobileProduction />} />
               <Route path="/mobile/historique" element={<MobileHistorique />} />
             </Route>
 
@@ -61,6 +65,9 @@ function App() {
               <Route path="/gasoil" element={<GasoilPage />} />
               <Route path="/personnel" element={<PersonnelPage />} />
               <Route path="/engins" element={<EnginsPage />} />
+              <Route path="/production" element={<ProductionPage />} />
+              <Route path="/matieres" element={<MatieresPage />} />
+              <Route path="/bq" element={<BQPage />} />
               <Route path="/validations" element={<ValidationsPage />} />
               <Route path="/alertes" element={<AlertesPage />} />
               <Route path="/excel" element={<ExcelPage />} />

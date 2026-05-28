@@ -25,6 +25,9 @@ from routers.validations_router import router as validations_router  # noqa: E40
 from routers.alerts_router import router as alerts_router  # noqa: E402
 from routers.dashboard_router import router as dashboard_router  # noqa: E402
 from routers.excel_router import router as excel_router  # noqa: E402
+from routers.production_router import router as production_router  # noqa: E402
+from routers.matieres_router import router as matieres_router  # noqa: E402
+from routers.bq_router import router as bq_router  # noqa: E402
 
 app = FastAPI(title="OMOTAL TRAVAUX - Gestion de Chantiers", version="1.0.0")
 
@@ -54,6 +57,9 @@ app.include_router(validations_router)
 app.include_router(alerts_router)
 app.include_router(dashboard_router)
 app.include_router(excel_router)
+app.include_router(production_router)
+app.include_router(matieres_router)
+app.include_router(bq_router)
 
 
 app.add_middleware(

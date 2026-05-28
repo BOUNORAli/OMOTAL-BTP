@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard, Building2, Wallet, Fuel, Users, Truck,
   CheckSquare, BellRing, FileSpreadsheet, Settings, LogOut,
-  Hammer, ChevronDown, Search, Menu, X,
+  Hammer, ChevronDown, Search, Menu, X, Package, ListChecks,
 } from "lucide-react";
 import { ROLES, ROLE_BADGES, can, canAny } from "@/lib/permissions";
 import {
@@ -26,6 +26,9 @@ const NAV_ITEMS = [
   { to: "/gasoil", label: "Gasoil", icon: Fuel, perm: ["gasoil.read"] },
   { to: "/personnel", label: "Personnel", icon: Users, perm: ["personnel.read"] },
   { to: "/engins", label: "Engins", icon: Truck, perm: ["engins.read"] },
+  { to: "/production", label: "Production", icon: Hammer, perm: ["production.read", "production.create", "*"] },
+  { to: "/matieres", label: "Matières & Fournisseurs", icon: Package, perm: ["fournisseurs.read", "*"] },
+  { to: "/bq", label: "BQ & Rentabilité", icon: ListChecks, perm: ["rentabilite.read", "*"] },
   { to: "/validations", label: "Validations", icon: CheckSquare, perm: ["validations.operational", "validations.high", "*"] },
   { to: "/alertes", label: "Alertes", icon: BellRing, perm: ["alertes.read"] },
   { to: "/excel", label: "Import / Export", icon: FileSpreadsheet, perm: ["reports.export"] },
@@ -115,8 +118,8 @@ export function ChantierSelector() {
   }
   return (
     <Select value={selectedId || ""} onValueChange={(v) => selectChantier(v === "all" ? null : v)}>
-      <SelectTrigger className="w-[260px]" data-testid="chantier-selector">
-        <Building2 className="h-4 w-4 mr-2" />
+      <SelectTrigger className="w-[180px] lg:w-[260px]" data-testid="chantier-selector">
+        <Building2 className="h-4 w-4 mr-2 flex-shrink-0" />
         <SelectValue placeholder="Choisir un chantier" />
       </SelectTrigger>
       <SelectContent>

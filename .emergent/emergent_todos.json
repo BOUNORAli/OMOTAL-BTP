@@ -1,46 +1,26 @@
 [
   {
-    "content": "Phase 2: Backend foundations (auth, models, DB, seed)",
+    "content": "Phase 3: Backend - Production, Voies, Fournisseurs, Matières, BQ models + routers",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Backend modules - Chantiers, Caisse, Gasoil",
+    "content": "Phase 3: Frontend - Production page (desktop + mobile)",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Backend modules - Personnel/Paie, Engins",
+    "content": "Phase 3: Frontend - Matières/Fournisseurs page",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Backend - Validations, Alertes, Dashboards",
+    "content": "Phase 3: Frontend - BQ & Rentabilité page",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Backend - Excel Import/Export",
+    "content": "Phase 3: Responsive global - audit & fix all desktop pages on mobile + mobile access for all roles",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Frontend - Layout, Login, Routing, Permissions, Auth",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: Frontend - Dashboards (global + chantier)",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: Frontend - Chantiers, Caisse pages",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: Frontend - Gasoil, Personnel, Engins pages",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: Frontend - Validations, Alertes, Mobile, Excel Import/Export, Admin",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 2: End to End testing with testing_agent_v3",
-    "status": "completed"
+    "content": "Phase 3: End to End testing with testing_agent_v3",
+    "status": "in_progress"
   }
 ]

@@ -1,13 +1,13 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   application:
     name: omotal-backend
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/omotal}
-    username: ${DATABASE_USERNAME:omotal}
-    password: ${DATABASE_PASSWORD:omotal}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:omotal}}
+    username: ${SPRING_DATASOURCE_USERNAME:${PGUSER:omotal}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${PGPASSWORD:omotal}}
   flyway:
     enabled: true
   jpa:

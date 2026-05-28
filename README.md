@@ -56,6 +56,7 @@ npm.cmd run check
 - Specifications MVP Phase 1 : `docs/specifications-fonctionnelles-mvp-phase-1.md`
 - Plan directeur d'execution : `docs/plan-directeur-execution.md`
 - Architecture frontend v1 : `docs/frontend-architecture-v1.md`
+- Deploiement Railway/Vercel : `docs/deployment-railway-vercel.md`
 
 ## Routes utiles
 

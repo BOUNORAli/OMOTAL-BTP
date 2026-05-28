@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Build and cache
+*.tsbuildinfo
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+.next-dev.err
+
+# Local artifacts generated during checks
+artifacts/

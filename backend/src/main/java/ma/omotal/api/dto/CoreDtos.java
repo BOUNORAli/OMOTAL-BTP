@@ -17,6 +17,7 @@ import ma.omotal.domain.enums.RemunerationType;
 import ma.omotal.domain.enums.SupplierType;
 import ma.omotal.domain.enums.TransactionCategory;
 import ma.omotal.domain.enums.TransactionType;
+import ma.omotal.domain.enums.DocumentType;
 
 public final class CoreDtos {
   private CoreDtos() {
@@ -51,6 +52,13 @@ public final class CoreDtos {
   public record SupplierDto(UUID id, String name, SupplierType type, String phone, boolean active) {
   }
 
+  public record CreateSupplierRequest(
+      @NotBlank String name,
+      @NotNull SupplierType type,
+      String phone
+  ) {
+  }
+
   public record EquipmentDto(
       UUID id,
       String designation,
@@ -65,6 +73,18 @@ public final class CoreDtos {
   ) {
   }
 
+  public record CreateEquipmentRequest(
+      @NotBlank String designation,
+      @NotBlank String type,
+      @NotBlank String owner,
+      @NotNull UUID chantierId,
+      @NotNull BillingMode billingMode,
+      BigDecimal hourlyRate,
+      BigDecimal dailyRate,
+      String usualDriver
+  ) {
+  }
+
   public record EmployeeDto(
       UUID id,
       String firstName,
@@ -76,6 +96,18 @@ public final class CoreDtos {
       BigDecimal dailySalary,
       BigDecimal hourlySalary,
       boolean active
+  ) {
+  }
+
+  public record CreateEmployeeRequest(
+      @NotBlank String firstName,
+      @NotBlank String lastName,
+      @NotBlank String position,
+      @NotNull UUID chantierId,
+      @NotNull RemunerationType remunerationType,
+      BigDecimal monthlySalary,
+      BigDecimal dailySalary,
+      BigDecimal hourlySalary
   ) {
   }
 
@@ -176,6 +208,16 @@ public final class CoreDtos {
   ) {
   }
 
+  public record CreatePersonnelTimesheetRequest(
+      @NotNull LocalDate date,
+      @NotNull UUID chantierId,
+      @NotNull UUID employeeId,
+      @Positive BigDecimal hoursWorked,
+      @NotNull DayType dayType,
+      boolean submit
+  ) {
+  }
+
   public record PersonnelAdvanceDto(
       UUID id,
       LocalDate date,
@@ -199,6 +241,18 @@ public final class CoreDtos {
       BillingMode appliedBillingMode,
       BigDecimal cost,
       OperationStatus status
+  ) {
+  }
+
+  public record CreateEquipmentTimesheetRequest(
+      @NotNull LocalDate date,
+      @NotNull UUID chantierId,
+      @NotNull UUID equipmentId,
+      @NotBlank String driver,
+      BigDecimal hoursWorked,
+      BigDecimal daysBilled,
+      @NotBlank String activityType,
+      boolean submit
   ) {
   }
 
@@ -242,5 +296,18 @@ public final class CoreDtos {
   }
 
   public record RejectRequest(@NotBlank String reason) {
+  }
+
+  public record DocumentDto(
+      UUID id,
+      UUID chantierId,
+      DocumentType documentType,
+      String fileName,
+      String contentType,
+      long sizeBytes,
+      String module,
+      String targetType,
+      UUID targetId
+  ) {
   }
 }

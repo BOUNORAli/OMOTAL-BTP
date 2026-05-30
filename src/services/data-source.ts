@@ -4,7 +4,9 @@ import {
   caisseService,
   chantierService,
   dashboardService,
+  documentService,
   enginsService,
+  fournisseurService,
   gasoilService,
   personnelService,
   productionService,
@@ -28,5 +30,7 @@ export const dataSource = isBackendEnabled()
       productionService,
       validationService,
       alertService,
+      documentService,
+      fournisseurService,
       authService,
     };

@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record AppProperties(
     long highPaymentThreshold,
     boolean demoDataEnabled,
-    String frontendOrigin
+    String frontendOrigin,
+    String documentStoragePath
 ) {
 }

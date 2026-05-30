@@ -4,6 +4,7 @@ import type {
   CaisseTransaction,
   Chantier,
   DashboardSummary,
+  DocumentRecord,
   Employee,
   Equipment,
   EquipmentTimesheet,
@@ -167,6 +168,18 @@ type BackendValidationItem = {
   amountOrQuantity: string;
   status: string;
   hasDocument: boolean;
+};
+
+type BackendDocument = {
+  id: string;
+  chantierId: string;
+  documentType: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  module: string;
+  targetType: string;
+  targetId: string;
 };
 
 type BackendDashboardSummary = {
@@ -348,6 +361,24 @@ function supplierFromBackend(item: BackendSupplier): Supplier {
   };
 }
 
+function documentFromBackend(item: BackendDocument): DocumentRecord {
+  return {
+    id: item.id,
+    chantierId: item.chantierId,
+    documentType: item.documentType,
+    fileName: item.fileName,
+    contentType: item.contentType,
+    sizeBytes: item.sizeBytes,
+    module: item.module,
+    targetType: item.targetType,
+    targetId: item.targetId,
+  };
+}
+
+function upper(value: string) {
+  return value.toUpperCase();
+}
+
 export const backendAuthService = {
   async login(email: string, password: string) {
     const payload = await apiFetch<{ token: string; user: BackendUser }>("/api/v1/auth/login", {
@@ -361,6 +392,20 @@ export const backendAuthService = {
       user: userFromBackend(payload.user),
     };
   },
+  async getUsers() {
+    const data = await apiFetch<BackendUser[]>("/api/v1/users");
+    return data.map(userFromBackend);
+  },
+  async createUser(input: Pick<User, "name" | "email" | "role" | "chantierIds"> & { password: string }) {
+    const data = await apiFetch<BackendUser>("/api/v1/users", {
+      method: "POST",
+      body: JSON.stringify({
+        ...input,
+        role: upper(input.role),
+      }),
+    });
+    return userFromBackend(data);
+  },
 };
 
 export const backendApi = {
@@ -371,6 +416,12 @@ export const backendApi = {
     },
     async getById(chantierId: string) {
       return chantierFromBackend(await apiFetch(`/api/v1/chantiers/${chantierId}`));
+    },
+    async create(input: Omit<Chantier, "id" | "status">) {
+      return chantierFromBackend(await apiFetch<BackendChantier>("/api/v1/chantiers", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }));
     },
   },
   dashboardService: {
@@ -421,6 +472,17 @@ export const backendApi = {
       const data = await apiFetch<BackendTransaction[]>("/api/v1/caisse/transactions");
       return data.map(transactionFromBackend);
     },
+    async createTransaction(input: Omit<CaisseTransaction, "id" | "status" | "hasDocument" | "enteredByUserId"> & { submit: boolean }) {
+      return transactionFromBackend(await apiFetch<BackendTransaction>("/api/v1/caisse/transactions", {
+        method: "POST",
+        body: JSON.stringify({
+          ...input,
+          type: upper(input.type),
+          paymentMode: upper(input.paymentMode),
+          category: upper(input.category),
+        }),
+      }));
+    },
   },
   gasoilService: {
     async overview(chantierId: string) {
@@ -451,7 +513,16 @@ export const backendApi = {
       };
       return gasoilExitFromBackend(await apiFetch("/api/v1/gasoil/exits", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...payload,
+          allocation: upper(payload.allocation),
+        }),
+      }));
+    },
+    async createEntry(input: Omit<GasoilEntry, "id" | "status" | "hasDocument" | "enteredByUserId"> & { submit: boolean }) {
+      return gasoilEntryFromBackend(await apiFetch<BackendGasoilEntry>("/api/v1/gasoil/entries", {
+        method: "POST",
+        body: JSON.stringify(input),
       }));
     },
   },
@@ -468,6 +539,24 @@ export const backendApi = {
         advances: data.advances.map(personnelAdvanceFromBackend),
       };
     },
+    async createEmployee(input: Omit<Employee, "id" | "active">) {
+      return employeeFromBackend(await apiFetch<BackendEmployee>("/api/v1/personnel/employees", {
+        method: "POST",
+        body: JSON.stringify({
+          ...input,
+          remunerationType: upper(input.remunerationType),
+        }),
+      }));
+    },
+    async createTimesheet(input: Pick<PersonnelTimesheet, "date" | "chantierId" | "employeeId" | "hoursWorked" | "dayType"> & { submit: boolean }) {
+      return personnelTimesheetFromBackend(await apiFetch<BackendPersonnelTimesheet>("/api/v1/personnel/timesheets", {
+        method: "POST",
+        body: JSON.stringify({
+          ...input,
+          dayType: upper(input.dayType),
+        }),
+      }));
+    },
   },
   enginsService: {
     async list() {
@@ -479,6 +568,24 @@ export const backendApi = {
         equipment: data.equipment.map(equipmentFromBackend),
         timesheets: data.timesheets.map(equipmentTimesheetFromBackend),
       };
+    },
+    async createEquipment(input: Omit<Equipment, "id" | "status">) {
+      return equipmentFromBackend(await apiFetch<BackendEquipment>("/api/v1/engins", {
+        method: "POST",
+        body: JSON.stringify({
+          ...input,
+          billingMode: upper(input.billingMode),
+        }),
+      }));
+    },
+    async createTimesheet(input: Pick<EquipmentTimesheet, "date" | "chantierId" | "equipmentId" | "driver" | "hoursWorked" | "daysBilled" | "activityType"> & { submit: boolean }) {
+      return equipmentTimesheetFromBackend(await apiFetch<BackendEquipmentTimesheet>("/api/v1/engins/timesheets", {
+        method: "POST",
+        body: JSON.stringify({
+          ...input,
+          activityType: upper(input.activityType),
+        }),
+      }));
     },
   },
   productionService: {
@@ -500,6 +607,15 @@ export const backendApi = {
       const data = await apiFetch<BackendSupplier[]>("/api/v1/fournisseurs");
       return data.map(supplierFromBackend);
     },
+    async create(input: Pick<Supplier, "name" | "type" | "phone">) {
+      return supplierFromBackend(await apiFetch<BackendSupplier>("/api/v1/fournisseurs", {
+        method: "POST",
+        body: JSON.stringify({
+          ...input,
+          type: upper(input.type),
+        }),
+      }));
+    },
   },
   validationService: {
     async listPending() {
@@ -509,12 +625,50 @@ export const backendApi = {
         status: status(item.status),
       }));
     },
+    async validate(type: string, id: string) {
+      await apiFetch<void>(`/api/v1/validations/${type}/${id}/validate`, { method: "POST" });
+    },
+    async reject(type: string, id: string, reason: string) {
+      await apiFetch<void>(`/api/v1/validations/${type}/${id}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      });
+    },
   },
   alertService: {
     async list() {
       const chantier = await backendApi.chantierService.list().then((items) => items[0]);
       if (!chantier) return [];
       return backendApi.dashboardService.chantier(chantier.id).then((summary) => summary.alerts);
+    },
+  },
+  documentService: {
+    async list(chantierId: string) {
+      const data = await apiFetch<BackendDocument[]>(`/api/v1/documents?chantierId=${chantierId}`);
+      return data.map(documentFromBackend);
+    },
+    async upload(input: {
+      chantierId: string;
+      documentType: string;
+      module: string;
+      targetType: string;
+      targetId: string;
+      file: File;
+    }) {
+      const formData = new FormData();
+      formData.set("chantierId", input.chantierId);
+      formData.set("documentType", input.documentType);
+      formData.set("module", input.module);
+      formData.set("targetType", input.targetType);
+      formData.set("targetId", input.targetId);
+      formData.set("file", input.file);
+      return documentFromBackend(await apiFetch<BackendDocument>("/api/v1/documents", {
+        method: "POST",
+        body: formData,
+      }));
+    },
+    downloadUrl(id: string) {
+      return `/api/v1/documents/${id}/download`;
     },
   },
 };

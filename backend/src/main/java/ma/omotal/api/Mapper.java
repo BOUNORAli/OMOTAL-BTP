@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import ma.omotal.api.dto.CoreDtos;
 import ma.omotal.domain.CaisseTransactionEntity;
 import ma.omotal.domain.ChantierEntity;
+import ma.omotal.domain.DocumentEntity;
 import ma.omotal.domain.EmployeeEntity;
 import ma.omotal.domain.EquipmentEntity;
 import ma.omotal.domain.EquipmentTimesheetEntity;
@@ -35,6 +36,20 @@ public final class Mapper {
 
   public static CoreDtos.SupplierDto supplier(SupplierEntity item) {
     return new CoreDtos.SupplierDto(item.getId(), item.getName(), item.getType(), item.getPhone(), item.isActive());
+  }
+
+  public static CoreDtos.DocumentDto document(DocumentEntity item) {
+    return new CoreDtos.DocumentDto(
+        item.getId(),
+        item.getChantierId(),
+        item.getDocumentType(),
+        item.getFileName(),
+        item.getContentType(),
+        item.getSizeBytes(),
+        item.getModule(),
+        item.getTargetType(),
+        item.getTargetId()
+    );
   }
 
   public static CoreDtos.EquipmentDto equipment(EquipmentEntity item) {

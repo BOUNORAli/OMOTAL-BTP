@@ -16,7 +16,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   }
 
   const headers = new Headers(options.headers);
-  if (!headers.has("Content-Type") && options.body) {
+  if (!headers.has("Content-Type") && options.body && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -42,7 +42,30 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     return undefined as T;
   }
 
-  return response.json() as Promise<T>;
+  const text = await response.text();
+  if (!text) {
+    return undefined as T;
+  }
+
+  return JSON.parse(text) as T;
+}
+
+export async function apiDownload(path: string): Promise<Blob> {
+  if (!API_BASE_URL) {
+    throw new Error("NEXT_PUBLIC_API_BASE_URL n'est pas configure.");
+  }
+
+  const headers = new Headers();
+  const token = getPersistedToken();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, { headers });
+  if (!response.ok) {
+    throw new Error("Telechargement impossible.");
+  }
+  return response.blob();
 }
 
 export function getPersistedToken() {

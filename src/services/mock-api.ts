@@ -15,7 +15,7 @@ import {
   users,
 } from "@/lib/domain/mock-data";
 import { buildDashboardSummary, calculateGasoilStock } from "@/lib/domain/calculations";
-import type { GasoilExit, Production } from "@/lib/domain/types";
+import type { CaisseTransaction, Chantier, Employee, Equipment, EquipmentTimesheet, GasoilEntry, GasoilExit, PersonnelTimesheet, Production, Supplier, User } from "@/lib/domain/types";
 
 const wait = (ms = 180) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -33,6 +33,15 @@ export const authService = {
       user,
     };
   },
+
+  async createUser(input: Pick<User, "name" | "email" | "role" | "chantierIds"> & { password: string }) {
+    await wait(180);
+    return {
+      id: `user-${Date.now()}`,
+      active: true,
+      ...input,
+    };
+  },
 };
 
 export const chantierService = {
@@ -44,6 +53,15 @@ export const chantierService = {
   async getById(chantierId: string) {
     await wait();
     return chantiers.find((chantier) => chantier.id === chantierId) ?? activeChantier;
+  },
+
+  async create(input: Omit<Chantier, "id" | "status">) {
+    await wait(260);
+    return {
+      id: `chantier-${Date.now()}`,
+      status: "en_cours" as const,
+      ...input,
+    };
   },
 };
 
@@ -90,6 +108,17 @@ export const caisseService = {
     await wait();
     return transactions;
   },
+
+  async createTransaction(input: Omit<CaisseTransaction, "id" | "status" | "hasDocument" | "enteredByUserId"> & { submit: boolean }) {
+    await wait(260);
+    return {
+      id: `transaction-${Date.now()}`,
+      status: input.submit ? "soumis" as const : "brouillon" as const,
+      hasDocument: false,
+      enteredByUserId: "user-ali",
+      ...input,
+    };
+  },
 };
 
 export const gasoilService = {
@@ -117,6 +146,17 @@ export const gasoilService = {
       ...input,
     };
   },
+
+  async createEntry(input: Omit<GasoilEntry, "id" | "status" | "hasDocument" | "enteredByUserId"> & { submit: boolean }) {
+    await wait(260);
+    return {
+      id: `gasoil-entry-${Date.now()}`,
+      status: input.submit ? "valide" as const : "brouillon" as const,
+      hasDocument: false,
+      enteredByUserId: "user-comptable",
+      ...input,
+    };
+  },
 };
 
 export const personnelService = {
@@ -128,6 +168,25 @@ export const personnelService = {
       advances: personnelAdvances,
     };
   },
+
+  async createEmployee(input: Omit<Employee, "id" | "active">) {
+    await wait(260);
+    return {
+      id: `employee-${Date.now()}`,
+      active: true,
+      ...input,
+    };
+  },
+
+  async createTimesheet(input: Pick<PersonnelTimesheet, "date" | "chantierId" | "employeeId" | "hoursWorked" | "dayType"> & { submit: boolean }) {
+    await wait(260);
+    return {
+      id: `personnel-timesheet-${Date.now()}`,
+      appliedRemunerationType: "jour" as const,
+      status: input.submit ? "valide" as const : "brouillon" as const,
+      ...input,
+    };
+  },
 };
 
 export const enginsService = {
@@ -136,6 +195,25 @@ export const enginsService = {
     return {
       equipment,
       timesheets: equipmentTimesheets,
+    };
+  },
+
+  async createEquipment(input: Omit<Equipment, "id" | "status">) {
+    await wait(260);
+    return {
+      id: `equipment-${Date.now()}`,
+      status: "mobilise" as const,
+      ...input,
+    };
+  },
+
+  async createTimesheet(input: Pick<EquipmentTimesheet, "date" | "chantierId" | "equipmentId" | "driver" | "hoursWorked" | "daysBilled" | "activityType"> & { submit: boolean }) {
+    await wait(260);
+    return {
+      id: `equipment-timesheet-${Date.now()}`,
+      appliedBillingMode: "heure" as const,
+      status: input.submit ? "soumis" as const : "brouillon" as const,
+      ...input,
     };
   },
 };
@@ -162,6 +240,15 @@ export const fournisseurService = {
   async list() {
     await wait();
     return suppliers;
+  },
+
+  async create(input: Pick<Supplier, "name" | "type" | "phone">) {
+    await wait(260);
+    return {
+      id: `supplier-${Date.now()}`,
+      active: true,
+      ...input,
+    };
   },
 };
 
@@ -219,11 +306,48 @@ export const validationService = {
         })),
     ];
   },
+
+  async validate() {
+    await wait(180);
+  },
+
+  async reject() {
+    await wait(180);
+  },
 };
 
 export const alertService = {
   async list() {
     await wait();
     return dashboardSummary.alerts;
+  },
+};
+
+export const documentService = {
+  async list() {
+    await wait();
+    return [];
+  },
+
+  async upload(input: {
+    chantierId: string;
+    documentType: string;
+    module: string;
+    targetType: string;
+    targetId: string;
+    file: File;
+  }) {
+    await wait(260);
+    return {
+      id: `document-${Date.now()}`,
+      chantierId: input.chantierId,
+      documentType: input.documentType,
+      fileName: input.file.name,
+      contentType: input.file.type,
+      sizeBytes: input.file.size,
+      module: input.module,
+      targetType: input.targetType,
+      targetId: input.targetId,
+    };
   },
 };

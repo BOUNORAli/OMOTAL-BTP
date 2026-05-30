@@ -1,25 +1,43 @@
+"use client";
+
 import { Package } from "lucide-react";
-import type { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
+import { DataTable, type DataTableColumn } from "@/components/common/data-table";
 import { PageHeader } from "@/components/common/page-header";
+import { LoadingState } from "@/components/common/state-blocks";
+import { Badge } from "@/components/ui/badge";
+import { FournisseurForm } from "@/features/operations/forms";
+import { useFournisseurs } from "@/hooks/use-app-data";
+import type { Supplier } from "@/lib/domain/types";
 
 export default function MatieresPage() {
-  return <ModulePlaceholder icon={<Package className="size-6" />} title="Matieres & Fournisseurs" />;
-}
+  const { data = [], isLoading } = useFournisseurs();
 
-function ModulePlaceholder({ icon, title }: { icon: ReactNode; title: string }) {
+  const columns: DataTableColumn<Supplier>[] = [
+    { header: "Nom", cell: (row) => <strong>{row.name}</strong> },
+    { header: "Type", cell: (row) => row.type },
+    { header: "Telephone", cell: (row) => row.phone ?? "-" },
+    { header: "Statut", cell: (row) => <Badge tone={row.active ? "green" : "red"}>{row.active ? "Actif" : "Inactif"}</Badge> },
+  ];
+
   return (
     <>
       <PageHeader
-        description="Module prevu pour achats, fournisseurs, echeances, paiements partiels et situations."
-        eyebrow="Phase suivante"
-        title={title}
+        description="Fournisseurs operationnels pour gasoil, matieres, transport, entretien, sous-traitance et location."
+        eyebrow="Referentiel"
+        title="Matieres & Fournisseurs"
       />
-      <Card className="p-8 text-center text-slate-600">
-        <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">{icon}</div>
-        <strong className="block text-slate-950">Ecran placeholder structure</strong>
-        <p className="mt-2">La route et le layout sont prets pour brancher le module sans refaire la navigation.</p>
+
+      <Card className="mb-6 flex items-center gap-3 p-4 text-sm text-slate-600">
+        <span className="rounded-xl bg-orange-50 p-2 text-orange-600">
+          <Package className="size-5" />
+        </span>
+        Les achats matieres complets restent prevus en phase suivante, mais le referentiel fournisseur est deja reel.
       </Card>
+
+      <FournisseurForm />
+
+      {isLoading ? <LoadingState /> : <DataTable columns={columns} rows={data} />}
     </>
   );
 }

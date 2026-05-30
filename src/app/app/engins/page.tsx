@@ -1,15 +1,16 @@
 "use client";
 
 import { Truck } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { DataTable, type DataTableColumn } from "@/components/common/data-table";
 import { PageHeader } from "@/components/common/page-header";
 import { LoadingState } from "@/components/common/state-blocks";
+import { DocumentUploader } from "@/components/domain/document-uploader";
 import { KpiCard } from "@/components/domain/kpi-card";
+import { EquipmentForm, EquipmentTimesheetForm } from "@/features/operations/forms";
 import { useEngins } from "@/hooks/use-app-data";
 import { calculateEquipmentCost } from "@/lib/domain/calculations";
-import type { Equipment } from "@/lib/domain/types";
-import { formatMoney } from "@/lib/format";
+import type { Equipment, EquipmentTimesheet } from "@/lib/domain/types";
+import { formatDate, formatMoney } from "@/lib/format";
 
 export default function EnginsPage() {
   const { data, isLoading } = useEngins();
@@ -26,6 +27,31 @@ export default function EnginsPage() {
     { header: "Statut", cell: (row) => row.status },
   ];
 
+  const timesheetColumns: DataTableColumn<EquipmentTimesheet>[] = [
+    { header: "Date", cell: (row) => formatDate(row.date) },
+    {
+      header: "Engin",
+      cell: (row) => data.equipment.find((item) => item.id === row.equipmentId)?.designation ?? row.equipmentId,
+    },
+    { header: "Chauffeur", cell: (row) => row.driver },
+    { header: "Heures", align: "right", cell: (row) => row.hoursWorked ? `${row.hoursWorked} h` : "-" },
+    { header: "Jours", align: "right", cell: (row) => row.daysBilled ? `${row.daysBilled} j` : "-" },
+    { header: "Activite", cell: (row) => row.activityType },
+    { header: "Statut", cell: (row) => row.status },
+    {
+      header: "Justif.",
+      cell: (row) => (
+        <DocumentUploader
+          chantierId={row.chantierId}
+          compact
+          module="engins"
+          targetId={row.id}
+          targetType="EQUIPMENT_TIMESHEET"
+        />
+      ),
+    },
+  ];
+
   return (
     <>
       <PageHeader
@@ -33,14 +59,17 @@ export default function EnginsPage() {
         eyebrow="Materiel"
         title="Engins"
       />
+      <EquipmentForm />
+      <EquipmentTimesheetForm />
       <section className="mb-6 grid gap-4 md:grid-cols-3">
         <KpiCard icon={<Truck className="size-4" />} label="Engins mobilises" value={String(data.equipment.length)} />
         <KpiCard label="Pointages" value={String(data.timesheets.length)} />
         <KpiCard label="Cout location valide" tone="warning" value={formatMoney(calculateEquipmentCost(data.timesheets))} />
       </section>
-      <Card className="p-4">
+      <section className="space-y-6">
         <DataTable columns={columns} rows={data.equipment} />
-      </Card>
+        <DataTable columns={timesheetColumns} rows={data.timesheets} />
+      </section>
     </>
   );
 }

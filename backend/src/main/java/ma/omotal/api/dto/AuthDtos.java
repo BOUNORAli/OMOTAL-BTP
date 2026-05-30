@@ -31,4 +31,13 @@ public final class AuthDtos {
       List<UUID> chantierIds
   ) {
   }
+
+  public record CreateUserRequest(
+      @NotBlank String name,
+      @Email @NotBlank String email,
+      @NotBlank String password,
+      Role role,
+      List<UUID> chantierIds
+  ) {
+  }
 }

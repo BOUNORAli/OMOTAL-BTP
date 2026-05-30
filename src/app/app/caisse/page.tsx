@@ -1,14 +1,14 @@
 "use client";
 
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DataTable, type DataTableColumn } from "@/components/common/data-table";
 import { PageHeader } from "@/components/common/page-header";
 import { LoadingState } from "@/components/common/state-blocks";
 import { AmountDisplay } from "@/components/domain/amount-display";
+import { DocumentUploader } from "@/components/domain/document-uploader";
 import { KpiCard } from "@/components/domain/kpi-card";
 import { StatusBadge } from "@/components/domain/status-badge";
+import { TransactionForm } from "@/features/operations/forms";
 import { useTransactions } from "@/hooks/use-app-data";
 import { calculateCashSummary } from "@/lib/domain/calculations";
 import type { CaisseTransaction } from "@/lib/domain/types";
@@ -26,17 +26,30 @@ export default function CaissePage() {
     { header: "Mode", cell: (row) => row.paymentMode },
     { header: "Debit", align: "right", cell: (row) => row.type === "debit" ? <AmountDisplay amount={row.amount} type="debit" /> : "-" },
     { header: "Credit", align: "right", cell: (row) => row.type === "credit" ? <AmountDisplay amount={row.amount} type="credit" /> : "-" },
+    {
+      header: "Justif.",
+      cell: (row) => (
+        <DocumentUploader
+          chantierId={row.chantierId}
+          compact
+          module="caisse"
+          targetId={row.id}
+          targetType="CAISSE_TRANSACTION"
+        />
+      ),
+    },
     { header: "Statut", cell: (row) => <StatusBadge status={row.status} /> },
   ];
 
   return (
     <>
       <PageHeader
-        actions={<Button><Plus className="size-4" /> Ajouter transaction</Button>}
         description="Transactions, filtres, justificatifs, statuts et validation des depenses elevees."
         eyebrow="Finance"
         title="Caisse"
       />
+
+      <TransactionForm />
 
       <section className="mb-6 grid gap-4 md:grid-cols-3">
         <KpiCard label="Credits valides" tone="success" value={<AmountDisplay amount={summary.credit} type="credit" />} />

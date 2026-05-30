@@ -234,3 +234,15 @@ export interface DashboardSummary {
   pendingValidations: number;
   alerts: Alert[];
 }
+
+export interface DocumentRecord {
+  id: string;
+  chantierId: string;
+  documentType: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  module: string;
+  targetType: string;
+  targetId: string;
+}

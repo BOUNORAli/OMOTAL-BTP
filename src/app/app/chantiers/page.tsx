@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/common/data-table";
 import { PageHeader } from "@/components/common/page-header";
 import { LoadingState } from "@/components/common/state-blocks";
 import { Badge } from "@/components/ui/badge";
+import { ChantierForm } from "@/features/operations/forms";
 import { useChantiers } from "@/hooks/use-app-data";
 import { formatDate, formatMoney } from "@/lib/format";
 import type { Chantier } from "@/lib/domain/types";
@@ -28,11 +28,11 @@ export default function ChantiersPage() {
   return (
     <>
       <PageHeader
-        actions={<Button><Plus className="size-4" /> Nouveau chantier</Button>}
         description="Lister, ouvrir et administrer les chantiers autorises."
         eyebrow="Administration chantier"
         title="Chantiers"
       />
+      <ChantierForm />
       {isLoading ? <LoadingState /> : <DataTable columns={columns} rows={data} />}
     </>
   );

@@ -26,7 +26,7 @@ omotal:
   app:
     high-payment-threshold: ${OMOTAL_HIGH_PAYMENT_THRESHOLD:30000}
     demo-data-enabled: ${OMOTAL_DEMO_DATA_ENABLED:true}
-    frontend-origin: ${OMOTAL_FRONTEND_ORIGIN:http://localhost:3000}
+    frontend-origin: ${OMOTAL_FRONTEND_ORIGIN:http://localhost:3000,https://*.vercel.app}
     document-storage-provider: ${OMOTAL_DOCUMENT_STORAGE_PROVIDER:local}
     document-storage-path: ${OMOTAL_DOCUMENT_STORAGE_PATH:./storage/documents}
     s3-endpoint: ${OMOTAL_S3_ENDPOINT:}

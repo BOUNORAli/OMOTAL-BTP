@@ -1,5 +1,6 @@
 package ma.omotal.security;
 
+import java.util.Arrays;
 import ma.omotal.config.AppProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -64,7 +65,19 @@ public class SecurityConfig {
   @Bean
   CorsConfigurationSource corsConfigurationSource(AppProperties properties) {
     var config = new CorsConfiguration();
-    config.addAllowedOrigin(properties.frontendOrigin());
+    Arrays.stream(properties.frontendOrigin().split(","))
+        .map(String::trim)
+        .filter(origin -> !origin.isBlank())
+        .forEach(origin -> {
+          if (origin.contains("*")) {
+            config.addAllowedOriginPattern(origin);
+          } else {
+            config.addAllowedOrigin(origin);
+          }
+        });
+    config.addAllowedOriginPattern("https://*.vercel.app");
+    config.addAllowedOriginPattern("http://localhost:*");
+    config.addAllowedOriginPattern("http://127.0.0.1:*");
     config.addAllowedHeader("*");
     config.addAllowedMethod("*");
     config.setAllowCredentials(true);

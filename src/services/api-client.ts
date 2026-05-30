@@ -1,6 +1,6 @@
 import type { Role } from "@/lib/domain/types";
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "";
+export const API_BASE_URL = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
 
 type RequestOptions = RequestInit & {
   auth?: boolean;
@@ -98,4 +98,13 @@ export function getPersistedSelectedChantierId() {
 
 export function normalizeRole(role: string): Role {
   return role.toLowerCase() as Role;
+}
+
+function normalizeApiBaseUrl(value?: string) {
+  const baseUrl = value?.trim().replace(/\/$/, "") ?? "";
+  if (!baseUrl) return "";
+  if (baseUrl.startsWith("http://") || baseUrl.startsWith("https://")) return baseUrl;
+  if (baseUrl.startsWith("//")) return `https:${baseUrl}`;
+  if (baseUrl.startsWith("localhost") || baseUrl.startsWith("127.0.0.1")) return `http://${baseUrl}`;
+  return `https://${baseUrl}`;
 }

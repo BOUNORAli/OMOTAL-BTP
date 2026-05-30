@@ -25,12 +25,14 @@ import type { Role } from "@/lib/domain/types";
 import { useAppStore } from "@/stores/app-store";
 import { cn } from "@/utils/cn";
 
-const navItems: Array<{
+export type AppNavItem = {
   href: string;
   icon: React.ElementType;
   label: string;
   permission: Permission;
-}> = [
+};
+
+export const appNavItems: AppNavItem[] = [
   { href: "/app/dashboard", icon: BarChart3, label: "Tableau de bord", permission: "dashboard.chantier.read" },
   { href: "/app/chantiers", icon: Building2, label: "Chantiers", permission: "chantier.read" },
   { href: "/app/caisse", icon: WalletCards, label: "Caisse", permission: "caisse.read" },
@@ -52,7 +54,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const currentUser = useAppStore((state) => state.currentUser);
 
-  const visibleItems = navItems.filter((item) => can(currentUser.role as Role, item.permission));
+  const visibleItems = appNavItems.filter((item) => can(currentUser.role as Role, item.permission));
 
   return (
     <aside className="hidden h-screen w-72 shrink-0 border-r border-slate-200 bg-white lg:sticky lg:top-0 lg:flex lg:flex-col">

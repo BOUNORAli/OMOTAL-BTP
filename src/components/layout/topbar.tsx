@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, HelpCircle, Search } from "lucide-react";
+import { Bell, HelpCircle, Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import { useChantiers } from "@/hooks/use-app-data";
@@ -41,6 +41,16 @@ export function Topbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 lg:hidden"
+            onClick={() => {
+              window.dispatchEvent(new Event("omotal:toggle-mobile-nav"));
+            }}
+            type="button"
+          >
+            <Menu className="size-4" />
+            Modules
+          </button>
           <Button size="sm" variant="secondary">
             <Bell className="size-4" />
             Notifications

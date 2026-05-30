@@ -27,7 +27,14 @@ omotal:
     high-payment-threshold: ${OMOTAL_HIGH_PAYMENT_THRESHOLD:30000}
     demo-data-enabled: ${OMOTAL_DEMO_DATA_ENABLED:true}
     frontend-origin: ${OMOTAL_FRONTEND_ORIGIN:http://localhost:3000}
+    document-storage-provider: ${OMOTAL_DOCUMENT_STORAGE_PROVIDER:local}
     document-storage-path: ${OMOTAL_DOCUMENT_STORAGE_PATH:./storage/documents}
+    s3-endpoint: ${OMOTAL_S3_ENDPOINT:}
+    s3-region: ${OMOTAL_S3_REGION:us-east-1}
+    s3-bucket: ${OMOTAL_S3_BUCKET:}
+    s3-access-key: ${OMOTAL_S3_ACCESS_KEY:}
+    s3-secret-key: ${OMOTAL_S3_SECRET_KEY:}
+    s3-path-style-access: ${OMOTAL_S3_PATH_STYLE_ACCESS:true}
 
 springdoc:
   swagger-ui:

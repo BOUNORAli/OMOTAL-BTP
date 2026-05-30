@@ -1,12 +1,9 @@
 package ma.omotal.api;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import ma.omotal.api.dto.CoreDtos;
-import ma.omotal.config.AppProperties;
 import ma.omotal.domain.DocumentEntity;
 import ma.omotal.domain.enums.DocumentType;
 import ma.omotal.repository.CaisseTransactionRepository;
@@ -18,7 +15,8 @@ import ma.omotal.repository.PersonnelTimesheetRepository;
 import ma.omotal.security.AccessPolicy;
 import ma.omotal.security.CurrentUserService;
 import ma.omotal.service.AuditService;
-import org.springframework.core.io.FileSystemResource;
+import ma.omotal.service.storage.DocumentStorageService;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -37,7 +35,7 @@ public class DocumentController {
   private final DocumentRepository documents;
   private final CurrentUserService currentUser;
   private final AccessPolicy accessPolicy;
-  private final AppProperties properties;
+  private final DocumentStorageService storage;
   private final AuditService audit;
   private final CaisseTransactionRepository transactions;
   private final GasoilEntryRepository gasoilEntries;
@@ -49,7 +47,7 @@ public class DocumentController {
       DocumentRepository documents,
       CurrentUserService currentUser,
       AccessPolicy accessPolicy,
-      AppProperties properties,
+      DocumentStorageService storage,
       AuditService audit,
       CaisseTransactionRepository transactions,
       GasoilEntryRepository gasoilEntries,
@@ -60,7 +58,7 @@ public class DocumentController {
     this.documents = documents;
     this.currentUser = currentUser;
     this.accessPolicy = accessPolicy;
-    this.properties = properties;
+    this.storage = storage;
     this.audit = audit;
     this.transactions = transactions;
     this.gasoilEntries = gasoilEntries;
@@ -102,9 +100,7 @@ public class DocumentController {
 
     var safeName = file.getOriginalFilename() == null ? "document" : file.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
     var storageKey = chantierId + "/" + UUID.randomUUID() + "-" + safeName;
-    var target = Path.of(properties.documentStoragePath()).resolve(storageKey).normalize();
-    Files.createDirectories(target.getParent());
-    file.transferTo(target);
+    storage.store(storageKey, file);
 
     var document = new DocumentEntity();
     document.setChantierId(chantierId);
@@ -124,20 +120,15 @@ public class DocumentController {
   }
 
   @GetMapping("/{id}/download")
-  public ResponseEntity<FileSystemResource> download(@PathVariable UUID id) {
+  public ResponseEntity<Resource> download(@PathVariable UUID id) throws IOException {
     var user = currentUser.currentUser();
     var document = documents.findById(id).orElseThrow();
     accessPolicy.requireChantier(user, document.getChantierId());
 
-    var file = Path.of(properties.documentStoragePath()).resolve(document.getStorageKey()).normalize();
-    if (!Files.exists(file)) {
-      throw new IllegalArgumentException("Fichier introuvable.");
-    }
-
     var headers = new HttpHeaders();
     headers.setContentType(MediaType.parseMediaType(document.getContentType()));
     headers.setContentDisposition(ContentDisposition.attachment().filename(document.getFileName()).build());
-    return ResponseEntity.ok().headers(headers).body(new FileSystemResource(file));
+    return ResponseEntity.ok().headers(headers).body(storage.load(document.getStorageKey()));
   }
 
   private void markTargetHasDocument(String targetType, UUID targetId) {

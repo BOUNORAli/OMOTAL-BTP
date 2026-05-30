@@ -18,4 +18,5 @@ omotal:
     high-payment-threshold: 30000
     demo-data-enabled: false
     frontend-origin: http://localhost:3000
+    document-storage-provider: local
     document-storage-path: ./target/test-documents

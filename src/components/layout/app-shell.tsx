@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Sidebar />
         <div className="min-w-0 flex-1">
           <Topbar />
-          <main className="mx-auto w-full max-w-[1500px] p-4 pb-28 lg:p-6">{children}</main>
+          <main className="mx-auto w-full max-w-[1500px] p-4 lg:p-6">{children}</main>
         </div>
       </div>
       <MobileAppNav />

@@ -22,9 +22,19 @@ export function Topbar() {
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:px-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-3">
+          <button
+            aria-label="Ouvrir la navigation"
+            className="grid size-11 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm lg:hidden"
+            onClick={() => {
+              window.dispatchEvent(new Event("omotal:toggle-mobile-nav"));
+            }}
+            type="button"
+          >
+            <Menu className="size-5" />
+          </button>
           <Select
             aria-label="Chantier selectionne"
-            className="max-w-xs"
+            className="min-w-0 flex-1 lg:max-w-xs"
             onChange={(event) => setSelectedChantierId(event.target.value)}
             value={selectedChantierId}
           >
@@ -40,17 +50,7 @@ export function Topbar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 lg:hidden"
-            onClick={() => {
-              window.dispatchEvent(new Event("omotal:toggle-mobile-nav"));
-            }}
-            type="button"
-          >
-            <Menu className="size-4" />
-            Modules
-          </button>
+        <div className="hidden items-center gap-2 sm:flex">
           <Button size="sm" variant="secondary">
             <Bell className="size-4" />
             Notifications

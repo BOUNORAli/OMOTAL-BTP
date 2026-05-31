@@ -2,14 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X } from "lucide-react";
+import { Fuel, HardHat, History, Home, Truck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { roleLabels } from "@/lib/domain/labels";
-import { can } from "@/lib/domain/permissions";
+import { can, type Permission } from "@/lib/domain/permissions";
 import type { Role } from "@/lib/domain/types";
 import { useAppStore } from "@/stores/app-store";
 import { cn } from "@/utils/cn";
-import { appNavItems } from "./sidebar";
+import { appNavItems, type AppNavItem } from "./sidebar";
+
+export const terrainNavItems: AppNavItem[] = [
+  { href: "/mobile/accueil", icon: Home, label: "Accueil terrain", permission: "gasoil.create_sortie" },
+  { href: "/mobile/gasoil/sortie", icon: Fuel, label: "Sortie gasoil", permission: "gasoil.create_sortie" },
+  { href: "/mobile/engins/pointage", icon: Truck, label: "Pointage engins", permission: "engins.create_pointage" },
+  { href: "/mobile/production/nouveau", icon: HardHat, label: "Production mobile", permission: "production.create" },
+  { href: "/mobile/historique", icon: History, label: "Historique mobile", permission: "gasoil.create_sortie" },
+];
+
+export function getMobileVisibleNavItems(role: Role) {
+  const byHref = new Map<string, AppNavItem>();
+  for (const item of terrainNavItems) {
+    if (can(role, item.permission as Permission)) {
+      byHref.set(item.href, item);
+    }
+  }
+  for (const item of appNavItems) {
+    if (can(role, item.permission)) {
+      byHref.set(item.href, item);
+    }
+  }
+  return Array.from(byHref.values());
+}
 
 export function MobileAppNav() {
   const pathname = usePathname();
@@ -17,7 +40,7 @@ export function MobileAppNav() {
   const [open, setOpen] = useState(false);
 
   const visibleItems = useMemo(
-    () => appNavItems.filter((item) => can(currentUser.role as Role, item.permission)),
+    () => getMobileVisibleNavItems(currentUser.role as Role),
     [currentUser.role],
   );
 

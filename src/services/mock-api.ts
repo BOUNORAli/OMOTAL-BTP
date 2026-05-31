@@ -351,3 +351,25 @@ export const documentService = {
     };
   },
 };
+
+export const exportService = {
+  async download(input: {
+    type: "caisse" | "gasoil" | "personnel" | "engins" | "dashboard";
+    chantierId: string;
+    from?: string;
+    to?: string;
+    onlyValidated?: boolean;
+  }) {
+    await wait(220);
+    const lines = [
+      "Rapport;OMOTAL TRAVAUX",
+      `Type;${input.type}`,
+      `Chantier;${input.chantierId}`,
+      `Periode;${input.from ?? "debut"} au ${input.to ?? "fin"}`,
+      `Filtre;${input.onlyValidated === false ? "toutes operations" : "valide uniquement"}`,
+    ];
+    return new Blob([lines.join("\n")], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+  },
+};

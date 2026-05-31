@@ -21,6 +21,7 @@
     <jjwt.version>0.12.6</jjwt.version>
     <springdoc.version>2.6.0</springdoc.version>
     <aws.sdk.version>2.25.70</aws.sdk.version>
+    <poi.version>5.3.0</poi.version>
   </properties>
 
   <dependencies>
@@ -79,6 +80,11 @@
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>s3</artifactId>
       <version>${aws.sdk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>${poi.version}</version>
     </dependency>
 
     <dependency>

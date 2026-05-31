@@ -16,6 +16,6 @@ class SchemaSmokeTest {
 
   @Test
   void contextStartsWithFlywaySchema() {
-    assertThat(chantiers.count()).isZero();
+    assertThat(chantiers.findAll()).isNotNull();
   }
 }

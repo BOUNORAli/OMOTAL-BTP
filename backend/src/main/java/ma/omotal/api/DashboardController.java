@@ -3,6 +3,7 @@ package ma.omotal.api;
 import java.util.Map;
 import java.util.UUID;
 import ma.omotal.api.dto.CoreDtos;
+import ma.omotal.domain.enums.Role;
 import ma.omotal.repository.ChantierRepository;
 import ma.omotal.security.AccessPolicy;
 import ma.omotal.security.CurrentUserService;
@@ -35,6 +36,7 @@ public class DashboardController {
   @GetMapping("/global")
   public Map<String, Object> global() {
     var user = currentUser.currentUser();
+    accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.DIRECTEUR, Role.COMPTABLE);
     var chantierDtos = chantiers.findAll().stream()
         .filter(chantier -> accessPolicy.canAccessChantier(user, chantier.getId()))
         .map(Mapper::chantier)
@@ -45,6 +47,7 @@ public class DashboardController {
   @GetMapping("/chantier/{chantierId}")
   public CoreDtos.DashboardSummaryDto chantier(@PathVariable UUID chantierId) {
     var user = currentUser.currentUser();
+    accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.DIRECTEUR, Role.COMPTABLE, Role.RESPONSABLE_CHANTIER);
     accessPolicy.requireChantier(user, chantierId);
     return dashboard.chantier(chantierId);
   }

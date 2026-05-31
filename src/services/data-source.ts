@@ -6,6 +6,7 @@ import {
   dashboardService,
   documentService,
   enginsService,
+  exportService,
   fournisseurService,
   gasoilService,
   personnelService,
@@ -32,5 +33,6 @@ export const dataSource = isBackendEnabled()
       alertService,
       documentService,
       fournisseurService,
+      exportService,
       authService,
     };

@@ -16,7 +16,7 @@ import type {
   Supplier,
   User,
 } from "@/lib/domain/types";
-import { apiFetch, getPersistedSelectedChantierId, normalizeRole } from "./api-client";
+import { apiDownload, apiFetch, getPersistedSelectedChantierId, normalizeRole } from "./api-client";
 
 type BackendUser = {
   id: string;
@@ -669,6 +669,21 @@ export const backendApi = {
     },
     downloadUrl(id: string) {
       return `/api/v1/documents/${id}/download`;
+    },
+  },
+  exportService: {
+    async download(input: {
+      type: "caisse" | "gasoil" | "personnel" | "engins" | "dashboard";
+      chantierId: string;
+      from?: string;
+      to?: string;
+      onlyValidated?: boolean;
+    }) {
+      const params = new URLSearchParams({ chantierId: input.chantierId });
+      if (input.from) params.set("from", input.from);
+      if (input.to) params.set("to", input.to);
+      if (input.onlyValidated !== undefined) params.set("onlyValidated", String(input.onlyValidated));
+      return apiDownload(`/api/v1/exports/${input.type}.xlsx?${params.toString()}`);
     },
   },
 };

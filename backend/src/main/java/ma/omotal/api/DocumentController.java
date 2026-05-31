@@ -6,6 +6,8 @@ import java.util.UUID;
 import ma.omotal.api.dto.CoreDtos;
 import ma.omotal.domain.DocumentEntity;
 import ma.omotal.domain.enums.DocumentType;
+import ma.omotal.domain.UserEntity;
+import ma.omotal.domain.enums.Role;
 import ma.omotal.repository.CaisseTransactionRepository;
 import ma.omotal.repository.DocumentRepository;
 import ma.omotal.repository.EquipmentTimesheetRepository;
@@ -71,7 +73,10 @@ public class DocumentController {
   public List<CoreDtos.DocumentDto> list(@RequestParam UUID chantierId) {
     var user = currentUser.currentUser();
     accessPolicy.requireChantier(user, chantierId);
-    return documents.findByChantierId(chantierId).stream().map(Mapper::document).toList();
+    return documents.findByChantierId(chantierId).stream()
+        .filter(document -> canReadTarget(user, document.getTargetType()))
+        .map(Mapper::document)
+        .toList();
   }
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -86,6 +91,7 @@ public class DocumentController {
     var user = currentUser.currentUser();
     accessPolicy.requireChantier(user, chantierId);
     requireTargetBelongsToChantier(targetType, targetId, chantierId);
+    requireTargetPermission(user, targetType);
 
     if (file.isEmpty()) {
       throw new IllegalArgumentException("Le fichier est obligatoire.");
@@ -124,6 +130,7 @@ public class DocumentController {
     var user = currentUser.currentUser();
     var document = documents.findById(id).orElseThrow();
     accessPolicy.requireChantier(user, document.getChantierId());
+    requireTargetPermission(user, document.getTargetType());
 
     var headers = new HttpHeaders();
     headers.setContentType(MediaType.parseMediaType(document.getContentType()));
@@ -173,6 +180,26 @@ public class DocumentController {
     };
     if (!belongs) {
       throw new IllegalArgumentException("Operation cible introuvable pour ce chantier.");
+    }
+  }
+
+  private boolean canReadTarget(UserEntity user, String targetType) {
+    try {
+      requireTargetPermission(user, targetType);
+      return true;
+    } catch (org.springframework.security.access.AccessDeniedException exception) {
+      return false;
+    }
+  }
+
+  private void requireTargetPermission(UserEntity user, String targetType) {
+    switch (targetType) {
+      case "CAISSE_TRANSACTION" -> accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.DIRECTEUR, Role.COMPTABLE);
+      case "PERSONNEL_TIMESHEET" -> accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.DIRECTEUR, Role.COMPTABLE);
+      case "GASOIL_ENTRY" -> accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.DIRECTEUR, Role.COMPTABLE);
+      case "GASOIL_EXIT" -> accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.DIRECTEUR, Role.COMPTABLE, Role.RESPONSABLE_CHANTIER, Role.POINTEUR);
+      case "EQUIPMENT_TIMESHEET" -> accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.DIRECTEUR, Role.COMPTABLE, Role.RESPONSABLE_CHANTIER, Role.POINTEUR);
+      default -> accessPolicy.requireRole(user, Role.SUPER_ADMIN);
     }
   }
 }

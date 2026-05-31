@@ -13,6 +13,10 @@
     "test": "vitest run",
     "backend:test": "mvn -f backend/pom.xml test",
     "backend:dev": "mvn -f backend/pom.xml spring-boot:run",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose stop postgres",
+    "pilot:frontend": "next dev",
+    "pilot:backend": "mvn -f backend/pom.xml spring-boot:run",
     "check": "npm.cmd run lint && npm.cmd run typecheck && npm.cmd run test && npm.cmd run backend:test"
   },
   "dependencies": {

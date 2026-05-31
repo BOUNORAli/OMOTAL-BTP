@@ -48,6 +48,7 @@ public class PersonnelController {
   @GetMapping
   public PersonnelPayload list() {
     var user = currentUser.currentUser();
+    accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.DIRECTEUR, Role.COMPTABLE);
     var ids = accessPolicy.authorizedChantierIds(user);
     var employeeData = ids.isEmpty() ? employees.findAll() : employees.findByChantierIdIn(ids);
     var timesheetData = ids.isEmpty() ? timesheets.findAll() : timesheets.findByChantierIdIn(ids);

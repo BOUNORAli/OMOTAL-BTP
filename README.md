@@ -41,6 +41,55 @@ Pour brancher le frontend sur le backend, creer un `.env.local` avec :
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 ```
 
+## Pilote local MVP
+
+1. Lancer PostgreSQL :
+
+```bash
+npm.cmd run db:up
+```
+
+2. Lancer le backend Spring Boot dans un premier terminal :
+
+```bash
+npm.cmd run pilot:backend
+```
+
+3. Creer `C:\Users\PC\Documents\OMOTAL BTP\.env.local` avec :
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+```
+
+Si le port `8080` est deja occupe, lancer le backend avec `PORT=8081` et mettre dans `.env.local` :
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8081
+```
+
+4. Lancer le frontend dans un deuxieme terminal :
+
+```bash
+npm.cmd run pilot:frontend
+```
+
+5. Ouvrir `http://localhost:3000/login` et utiliser :
+
+- Ali : `ali@omotal.ma` / `password`
+- Ayoub : `ayoub@omotal.ma` / `password`
+- Responsable : `responsable@omotal.ma` / `password`
+
+6. Scenario pilote a verifier :
+
+- Ali ouvre le dashboard et controle le chantier `Genie Meknes AO 62/2026`.
+- Ayoub saisit une sortie gasoil depuis `/mobile/gasoil/sortie`.
+- Ayoub saisit un pointage engin depuis `/mobile/engins/pointage`.
+- Le responsable valide depuis `/app/validations`.
+- Ali verifie que le dashboard et le stock gasoil se mettent a jour.
+- Ali telecharge les rapports `.xlsx` depuis `/app/rapports`.
+
+Les exports `.xlsx` incluent le chantier, la periode, l'utilisateur generateur, le filtre applique et les totaux.
+
 ## Scripts
 
 ```bash

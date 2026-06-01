@@ -1,30 +1,36 @@
 "use client";
 
 import { Truck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableColumn } from "@/components/common/data-table";
 import { PageHeader } from "@/components/common/page-header";
 import { LoadingState } from "@/components/common/state-blocks";
 import { DocumentUploader } from "@/components/domain/document-uploader";
 import { KpiCard } from "@/components/domain/kpi-card";
+import { StatusBadge } from "@/components/domain/status-badge";
 import { EquipmentForm, EquipmentTimesheetForm } from "@/features/operations/forms";
-import { useEngins } from "@/hooks/use-app-data";
+import { useChantiers, useEngins } from "@/hooks/use-app-data";
 import { calculateEquipmentCost } from "@/lib/domain/calculations";
 import type { Equipment, EquipmentTimesheet } from "@/lib/domain/types";
 import { formatDate, formatMoney } from "@/lib/format";
 
 export default function EnginsPage() {
   const { data, isLoading } = useEngins();
+  const { data: chantiers = [] } = useChantiers();
 
   if (isLoading || !data) return <LoadingState />;
+
+  const chantierName = (id: string) => chantiers.find((chantier) => chantier.id === id)?.name ?? "Chantier non charge";
 
   const columns: DataTableColumn<Equipment>[] = [
     { header: "Designation", cell: (row) => <strong>{row.designation}</strong> },
     { header: "Type", cell: (row) => row.type },
+    { header: "Chantier", cell: (row) => chantierName(row.chantierId) },
     { header: "Proprietaire", cell: (row) => row.owner },
     { header: "Facturation", cell: (row) => row.billingMode },
     { header: "Tarif", align: "right", cell: (row) => formatMoney(row.hourlyRate ?? row.dailyRate ?? 0) },
     { header: "Chauffeur", cell: (row) => row.usualDriver ?? "-" },
-    { header: "Statut", cell: (row) => row.status },
+    { header: "Statut", cell: (row) => <Badge tone={row.status === "mobilise" ? "green" : "orange"}>{row.status}</Badge> },
   ];
 
   const timesheetColumns: DataTableColumn<EquipmentTimesheet>[] = [
@@ -33,11 +39,12 @@ export default function EnginsPage() {
       header: "Engin",
       cell: (row) => data.equipment.find((item) => item.id === row.equipmentId)?.designation ?? row.equipmentId,
     },
+    { header: "Chantier", cell: (row) => chantierName(row.chantierId) },
     { header: "Chauffeur", cell: (row) => row.driver },
     { header: "Heures", align: "right", cell: (row) => row.hoursWorked ? `${row.hoursWorked} h` : "-" },
     { header: "Jours", align: "right", cell: (row) => row.daysBilled ? `${row.daysBilled} j` : "-" },
     { header: "Activite", cell: (row) => row.activityType },
-    { header: "Statut", cell: (row) => row.status },
+    { header: "Statut", cell: (row) => <StatusBadge status={row.status} /> },
     {
       header: "Justif.",
       cell: (row) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Wifi } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { MobileBottomNav } from "./mobile-bottom-nav";
@@ -15,12 +15,24 @@ export function MobileShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { data: chantiers = [] } = useChantiers();
   const chantier = chantiers.find((item) => item.id === selectedChantierId);
+  const [storeHydrated, setStoreHydrated] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return useAppStore.persist?.hasHydrated?.() ?? true;
+  });
 
   useEffect(() => {
-    if (isBackendEnabled() && !authToken) {
+    return useAppStore.persist?.onFinishHydration?.(() => setStoreHydrated(true));
+  }, []);
+
+  useEffect(() => {
+    if (storeHydrated && isBackendEnabled() && !authToken) {
       router.replace("/login");
     }
-  }, [authToken, router]);
+  }, [authToken, router, storeHydrated]);
+
+  if (isBackendEnabled() && !storeHydrated) {
+    return <div className="min-h-screen bg-slate-100" />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 pb-24">

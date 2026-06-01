@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { isBackendEnabled } from "@/services/api-client";
 import { useAppStore } from "@/stores/app-store";
@@ -11,12 +11,24 @@ import { Topbar } from "./topbar";
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const authToken = useAppStore((state) => state.authToken);
+  const [storeHydrated, setStoreHydrated] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return useAppStore.persist?.hasHydrated?.() ?? true;
+  });
 
   useEffect(() => {
-    if (isBackendEnabled() && !authToken) {
+    return useAppStore.persist?.onFinishHydration?.(() => setStoreHydrated(true));
+  }, []);
+
+  useEffect(() => {
+    if (storeHydrated && isBackendEnabled() && !authToken) {
       router.replace("/login");
     }
-  }, [authToken, router]);
+  }, [authToken, router, storeHydrated]);
+
+  if (isBackendEnabled() && !storeHydrated) {
+    return <div className="min-h-screen bg-slate-50" />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">

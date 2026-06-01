@@ -5,7 +5,16 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
-import { useAlerts, useChantiers } from "@/hooks/use-app-data";
+import {
+  useAlerts,
+  useChantiers,
+  useEngins,
+  useFournisseurs,
+  useGasoilOverview,
+  usePersonnel,
+  useProductions,
+  useTransactions,
+} from "@/hooks/use-app-data";
 import { roleLabels } from "@/lib/domain/labels";
 import { can, type Permission } from "@/lib/domain/permissions";
 import { useAppStore } from "@/stores/app-store";
@@ -25,11 +34,44 @@ export function Topbar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const searchActive = searchOpen || search.trim().length > 0;
+  const canReadCaisse = can(currentUser.role, "caisse.read");
+  const canReadEngins = can(currentUser.role, "engins.read");
+  const canReadPersonnel = can(currentUser.role, "personnel.read");
+  const canReadFournisseurs = can(currentUser.role, "fournisseurs.read");
+  const canReadGasoil = can(currentUser.role, "gasoil.read");
+  const canReadProduction = can(currentUser.role, "production.read");
+  const { data: transactions = [] } = useTransactions({ enabled: searchActive && canReadCaisse });
+  const { data: engins } = useEngins({ enabled: searchActive && canReadEngins });
+  const { data: personnel } = usePersonnel({ enabled: searchActive && canReadPersonnel });
+  const { data: fournisseurs = [] } = useFournisseurs({ enabled: searchActive && canReadFournisseurs });
+  const { data: gasoil } = useGasoilOverview(selectedChantierId, { enabled: searchActive && canReadGasoil });
+  const { data: productions = [] } = useProductions({ enabled: searchActive && canReadProduction });
 
   const availableChantiers =
     currentUser.role === "super_admin" || currentUser.role === "directeur"
       ? chantiers
       : chantiers.filter((chantier) => currentUser.chantierIds.includes(chantier.id));
+
+  const chantierNames = useMemo(
+    () => new Map(chantiers.map((chantier) => [chantier.id, chantier.name])),
+    [chantiers],
+  );
+
+  const equipmentNames = useMemo(
+    () => new Map((engins?.equipment ?? []).map((item) => [item.id, item.designation])),
+    [engins?.equipment],
+  );
+
+  const employeeNames = useMemo(
+    () => new Map((personnel?.employees ?? []).map((item) => [item.id, `${item.firstName} ${item.lastName}`])),
+    [personnel?.employees],
+  );
+
+  const supplierNames = useMemo(
+    () => new Map(fournisseurs.map((item) => [item.id, item.name])),
+    [fournisseurs],
+  );
 
   const searchResults = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -41,10 +83,87 @@ export function Topbar() {
       detail: `Chantier ${chantier.code}`,
       href: `/app/chantiers/${chantier.id}`,
     }));
-    const all = [...pages, ...chantierResults];
+    const dataResults = query
+      ? [
+          ...transactions.map((item) => ({
+            label: item.description,
+            detail: `Caisse • ${item.category} • ${item.amount.toLocaleString("fr-MA")} MAD • ${chantierNames.get(item.chantierId) ?? "Chantier"}`,
+            href: "/app/caisse",
+            searchText: `${item.description} ${item.personOrSupplier ?? ""} ${item.category} ${item.paymentMode} ${item.amount} ${chantierNames.get(item.chantierId) ?? ""}`,
+          })),
+          ...(engins?.equipment ?? []).map((item) => ({
+            label: item.designation,
+            detail: `Engin • ${item.type} • ${item.owner} • ${chantierNames.get(item.chantierId) ?? "Chantier"}`,
+            href: "/app/engins",
+            searchText: `${item.designation} ${item.type} ${item.owner} ${item.usualDriver ?? ""} ${chantierNames.get(item.chantierId) ?? ""}`,
+          })),
+          ...(engins?.timesheets ?? []).map((item) => ({
+            label: `Pointage ${equipmentNames.get(item.equipmentId) ?? item.driver}`,
+            detail: `Engins • ${item.driver} • ${item.hoursWorked ?? item.daysBilled ?? 0} ${item.hoursWorked ? "h" : "j"}`,
+            href: "/app/engins",
+            searchText: `${equipmentNames.get(item.equipmentId) ?? ""} ${item.driver} ${item.activityType} ${item.date}`,
+          })),
+          ...(personnel?.employees ?? []).map((item) => ({
+            label: `${item.firstName} ${item.lastName}`,
+            detail: `Personnel • ${item.position} • ${chantierNames.get(item.chantierId) ?? "Chantier"}`,
+            href: "/app/personnel",
+            searchText: `${item.firstName} ${item.lastName} ${item.position} ${chantierNames.get(item.chantierId) ?? ""}`,
+          })),
+          ...(personnel?.timesheets ?? []).map((item) => ({
+            label: `Pointage ${employeeNames.get(item.employeeId) ?? "employe"}`,
+            detail: `Personnel • ${item.hoursWorked} h • ${item.dayType}`,
+            href: "/app/personnel",
+            searchText: `${employeeNames.get(item.employeeId) ?? ""} ${item.dayType} ${item.date}`,
+          })),
+          ...fournisseurs.map((item) => ({
+            label: item.name,
+            detail: `Fournisseur • ${item.type}${item.phone ? ` • ${item.phone}` : ""}`,
+            href: "/app/matieres",
+            searchText: `${item.name} ${item.type} ${item.phone ?? ""}`,
+          })),
+          ...(gasoil?.entries ?? []).map((item) => ({
+            label: item.receiptNumber ? `Entree gasoil ${item.receiptNumber}` : "Entree gasoil",
+            detail: `${supplierNames.get(item.supplierId) ?? "Fournisseur"} • ${item.liters} L • ${item.status}`,
+            href: "/app/gasoil",
+            searchText: `${item.receiptNumber ?? ""} ${supplierNames.get(item.supplierId) ?? ""} ${item.liters} ${item.status}`,
+          })),
+          ...(gasoil?.exits ?? []).map((item) => ({
+            label: item.exitNumber ? `Sortie gasoil ${item.exitNumber}` : "Sortie gasoil",
+            detail: `${equipmentNames.get(item.equipmentId ?? "") ?? item.responsible} • ${item.liters} L • ${item.status}`,
+            href: "/app/gasoil",
+            searchText: `${item.exitNumber ?? ""} ${item.responsible} ${equipmentNames.get(item.equipmentId ?? "") ?? ""} ${item.liters} ${item.status}`,
+          })),
+          ...productions.map((item) => ({
+            label: `${item.workType} - ${item.voie}`,
+            detail: `Production • ${item.quantity} ${item.unit} • ${item.troncon ?? item.date}`,
+            href: "/app/production",
+            searchText: `${item.workType} ${item.voie} ${item.tranche ?? ""} ${item.troncon ?? ""} ${item.driver ?? ""} ${item.quantity} ${item.unit}`,
+          })),
+        ]
+      : [];
+    const all = [...pages, ...chantierResults, ...dataResults];
     if (!query) return all.slice(0, 7);
-    return all.filter((item) => `${item.label} ${item.detail}`.toLowerCase().includes(query)).slice(0, 7);
-  }, [availableChantiers, currentUser.role, search]);
+    return all
+      .filter((item) => `${item.label} ${item.detail} ${"searchText" in item ? item.searchText : ""}`.toLowerCase().includes(query))
+      .slice(0, 10);
+  }, [
+    availableChantiers,
+    chantierNames,
+    currentUser.role,
+    employeeNames,
+    engins?.equipment,
+    engins?.timesheets,
+    equipmentNames,
+    fournisseurs,
+    gasoil?.entries,
+    gasoil?.exits,
+    personnel?.employees,
+    personnel?.timesheets,
+    productions,
+    search,
+    supplierNames,
+    transactions,
+  ]);
 
   const unreadAlerts = alerts.filter((alert) => alert.severity === "critical" || alert.severity === "warning").length;
 
@@ -111,7 +230,7 @@ export function Topbar() {
                     setSearchOpen(false);
                   }
                 }}
-                placeholder="Rechercher transaction, engin, bon..."
+                placeholder="Rechercher page, transaction, engin, bon..."
                 value={search}
               />
               {searchOpen && (

@@ -1,4 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+type QueryGate = {
+  enabled?: boolean;
+};
 import type {
   Alert,
   CaisseTransaction,
@@ -71,10 +75,11 @@ export function useChantierDashboard(chantierId: string) {
   });
 }
 
-export function useTransactions() {
+export function useTransactions(options: QueryGate = {}) {
   return useQuery<CaisseTransaction[]>({
     queryKey: ["transactions"],
     queryFn: dataSource.caisseService.listTransactions,
+    enabled: options.enabled,
   });
 }
 
@@ -92,7 +97,7 @@ export function useCreateTransaction() {
   });
 }
 
-export function useGasoilOverview(chantierId: string) {
+export function useGasoilOverview(chantierId: string, options: QueryGate = {}) {
   return useQuery<{
     entries: import("@/lib/domain/types").GasoilEntry[];
     exits: GasoilExit[];
@@ -100,6 +105,7 @@ export function useGasoilOverview(chantierId: string) {
   }>({
     queryKey: ["gasoil", chantierId],
     queryFn: () => dataSource.gasoilService.overview(chantierId),
+    enabled: options.enabled ?? Boolean(chantierId),
   });
 }
 
@@ -130,7 +136,7 @@ export function useCreateGasoilEntry() {
   });
 }
 
-export function usePersonnel() {
+export function usePersonnel(options: QueryGate = {}) {
   return useQuery<{
     employees: import("@/lib/domain/types").Employee[];
     timesheets: import("@/lib/domain/types").PersonnelTimesheet[];
@@ -138,6 +144,7 @@ export function usePersonnel() {
   }>({
     queryKey: ["personnel"],
     queryFn: dataSource.personnelService.list,
+    enabled: options.enabled,
   });
 }
 
@@ -164,13 +171,14 @@ export function useCreatePersonnelTimesheet() {
   });
 }
 
-export function useEngins() {
+export function useEngins(options: QueryGate = {}) {
   return useQuery<{
     equipment: import("@/lib/domain/types").Equipment[];
     timesheets: import("@/lib/domain/types").EquipmentTimesheet[];
   }>({
     queryKey: ["engins"],
     queryFn: dataSource.enginsService.list,
+    enabled: options.enabled,
   });
 }
 
@@ -198,10 +206,11 @@ export function useCreateEquipmentTimesheet() {
   });
 }
 
-export function useProductions() {
+export function useProductions(options: QueryGate = {}) {
   return useQuery<Production[]>({
     queryKey: ["productions"],
     queryFn: dataSource.productionService.list,
+    enabled: options.enabled,
   });
 }
 
@@ -322,10 +331,11 @@ export function useAlerts() {
   });
 }
 
-export function useUsers() {
+export function useUsers(options: QueryGate = {}) {
   return useQuery<User[]>({
     queryKey: ["users"],
     queryFn: dataSource.authService.getUsers,
+    enabled: options.enabled,
   });
 }
 
@@ -341,10 +351,11 @@ export function useCreateUser() {
   });
 }
 
-export function useFournisseurs() {
+export function useFournisseurs(options: QueryGate = {}) {
   return useQuery<Supplier[]>({
     queryKey: ["fournisseurs"],
     queryFn: dataSource.fournisseurService.list,
+    enabled: options.enabled,
   });
 }
 

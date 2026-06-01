@@ -4,25 +4,31 @@ import { Users } from "lucide-react";
 import { DataTable, type DataTableColumn } from "@/components/common/data-table";
 import { PageHeader } from "@/components/common/page-header";
 import { LoadingState } from "@/components/common/state-blocks";
+import { Badge } from "@/components/ui/badge";
 import { DocumentUploader } from "@/components/domain/document-uploader";
 import { KpiCard } from "@/components/domain/kpi-card";
+import { StatusBadge } from "@/components/domain/status-badge";
 import { EmployeeForm, PersonnelTimesheetForm } from "@/features/operations/forms";
-import { usePersonnel } from "@/hooks/use-app-data";
+import { useChantiers, usePersonnel } from "@/hooks/use-app-data";
 import { calculatePersonnelAdvances, calculatePersonnelDue } from "@/lib/domain/calculations";
 import type { Employee, PersonnelTimesheet } from "@/lib/domain/types";
 import { formatDate, formatMoney } from "@/lib/format";
 
 export default function PersonnelPage() {
   const { data, isLoading } = usePersonnel();
+  const { data: chantiers = [] } = useChantiers();
 
   if (isLoading || !data) return <LoadingState />;
+
+  const chantierName = (id: string) => chantiers.find((chantier) => chantier.id === id)?.name ?? "Chantier non charge";
 
   const columns: DataTableColumn<Employee>[] = [
     { header: "Nom", cell: (row) => <strong>{row.firstName} {row.lastName}</strong> },
     { header: "Poste", cell: (row) => row.position },
+    { header: "Chantier", cell: (row) => chantierName(row.chantierId) },
     { header: "Type", cell: (row) => row.remunerationType },
     { header: "Salaire ref.", align: "right", cell: (row) => formatMoney(row.monthlySalary ?? row.dailySalary ?? row.hourlySalary ?? 0) },
-    { header: "Statut", cell: (row) => row.active ? "Actif" : "Inactif" },
+    { header: "Statut", cell: (row) => <Badge tone={row.active ? "green" : "red"}>{row.active ? "Actif" : "Inactif"}</Badge> },
   ];
 
   const timesheetColumns: DataTableColumn<PersonnelTimesheet>[] = [
@@ -34,9 +40,10 @@ export default function PersonnelPage() {
         return employee ? `${employee.firstName} ${employee.lastName}` : row.employeeId;
       },
     },
+    { header: "Chantier", cell: (row) => chantierName(row.chantierId) },
     { header: "Heures", align: "right", cell: (row) => `${row.hoursWorked} h` },
     { header: "Journee", cell: (row) => row.dayType },
-    { header: "Statut", cell: (row) => row.status },
+    { header: "Statut", cell: (row) => <StatusBadge status={row.status} /> },
     {
       header: "Justif.",
       cell: (row) => (

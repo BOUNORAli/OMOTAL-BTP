@@ -9,7 +9,7 @@ import { KpiCard } from "@/components/domain/kpi-card";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { GasoilSortieForm } from "@/features/gasoil/gasoil-sortie-form";
 import { GasoilEntryForm } from "@/features/operations/forms";
-import { useGasoilOverview } from "@/hooks/use-app-data";
+import { useEngins, useFournisseurs, useGasoilOverview } from "@/hooks/use-app-data";
 import type { GasoilEntry, GasoilExit } from "@/lib/domain/types";
 import { formatDate, formatMoney, formatNumber } from "@/lib/format";
 import { useAppStore } from "@/stores/app-store";
@@ -17,10 +17,15 @@ import { useAppStore } from "@/stores/app-store";
 export default function GasoilPage() {
   const chantierId = useAppStore((state) => state.selectedChantierId);
   const { data, isLoading } = useGasoilOverview(chantierId);
+  const { data: fournisseurs = [] } = useFournisseurs();
+  const { data: engins } = useEngins();
+  const supplierName = (id: string) => fournisseurs.find((supplier) => supplier.id === id)?.name ?? "Fournisseur non charge";
+  const equipmentName = (id?: string) => id ? engins?.equipment.find((item) => item.id === id)?.designation ?? "Engin non charge" : "-";
 
   const exitColumns: DataTableColumn<GasoilExit>[] = [
     { header: "Date", cell: (row) => formatDate(row.date) },
     { header: "BS", cell: (row) => row.exitNumber ?? "-" },
+    { header: "Engin", cell: (row) => equipmentName(row.equipmentId) },
     { header: "Responsable", cell: (row) => row.responsible },
     { header: "Affectation", cell: (row) => row.allocation },
     { header: "Litres", align: "right", cell: (row) => formatNumber(row.liters, "L") },
@@ -43,7 +48,7 @@ export default function GasoilPage() {
   const entryColumns: DataTableColumn<GasoilEntry>[] = [
     { header: "Date", cell: (row) => formatDate(row.date) },
     { header: "BR", cell: (row) => row.receiptNumber ?? "-" },
-    { header: "Fournisseur", cell: (row) => row.supplierId },
+    { header: "Fournisseur", cell: (row) => supplierName(row.supplierId) },
     { header: "Litres", align: "right", cell: (row) => formatNumber(row.liters, "L") },
     { header: "Montant", align: "right", cell: (row) => formatMoney(row.liters * row.unitPrice) },
     {

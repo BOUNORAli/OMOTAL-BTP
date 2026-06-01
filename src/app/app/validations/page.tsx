@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/common/page-header";
 import { LoadingState } from "@/components/common/state-blocks";
 import { DocumentUploader } from "@/components/domain/document-uploader";
 import { StatusBadge } from "@/components/domain/status-badge";
-import { usePendingValidations, useRejectOperation, useValidateOperation } from "@/hooks/use-app-data";
+import { useChantiers, usePendingValidations, useRejectOperation, useValidateOperation } from "@/hooks/use-app-data";
 import type { OperationStatus } from "@/lib/domain/types";
 import { formatDate } from "@/lib/format";
 
@@ -24,6 +24,7 @@ type ValidationRow = {
 
 export default function ValidationsPage() {
   const { data = [], isLoading } = usePendingValidations();
+  const { data: chantiers = [] } = useChantiers();
   const validateMutation = useValidateOperation();
   const rejectMutation = useRejectOperation();
 
@@ -35,7 +36,7 @@ export default function ValidationsPage() {
 
   const columns: DataTableColumn<ValidationRow>[] = [
     { header: "Type", cell: (row) => row.type },
-    { header: "Chantier", cell: (row) => row.chantierId },
+    { header: "Chantier", cell: (row) => chantiers.find((chantier) => chantier.id === row.chantierId)?.name ?? "Chantier non charge" },
     { header: "Date", cell: (row) => formatDate(row.date) },
     { header: "Resume", cell: (row) => <strong>{row.summary}</strong> },
     { header: "Montant/quantite", cell: (row) => row.amountOrQuantity },

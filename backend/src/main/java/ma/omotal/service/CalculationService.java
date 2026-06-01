@@ -109,6 +109,35 @@ public class CalculationService {
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
+  public static BigDecimal calculateProductionQuantity(
+      String unit,
+      BigDecimal length,
+      BigDecimal width,
+      BigDecimal depth,
+      BigDecimal manualQuantity
+  ) {
+    if (manualQuantity != null) {
+      return manualQuantity;
+    }
+    if ("M3".equalsIgnoreCase(unit) && length != null && width != null && depth != null) {
+      return length.multiply(width).multiply(depth).setScale(3, RoundingMode.HALF_UP);
+    }
+    if ("M2".equalsIgnoreCase(unit) && length != null && width != null) {
+      return length.multiply(width).setScale(3, RoundingMode.HALF_UP);
+    }
+    return BigDecimal.ZERO;
+  }
+
+  public static BigDecimal lineTotal(BigDecimal quantity, BigDecimal unitPrice) {
+    return nvl(quantity).multiply(nvl(unitPrice)).setScale(2, RoundingMode.HALF_UP);
+  }
+
+  public static BigDecimal withVat(BigDecimal amountHt, BigDecimal vatRate) {
+    return nvl(amountHt)
+        .multiply(BigDecimal.ONE.add(nvl(vatRate).divide(new BigDecimal("100"), MathContext.DECIMAL64)))
+        .setScale(2, RoundingMode.HALF_UP);
+  }
+
   private static BigDecimal nvl(BigDecimal value) {
     return value == null ? BigDecimal.ZERO : value;
   }

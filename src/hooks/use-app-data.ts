@@ -8,12 +8,18 @@ import type {
   Employee,
   Equipment,
   EquipmentTimesheet,
+  EtpOverview,
   GasoilExit,
   GasoilEntry,
+  MaintenanceRecord,
+  MaterialPurchase,
   OperationStatus,
   PersonnelTimesheet,
   Production,
+  BqOverview,
+  SupplierPayment,
   Supplier,
+  TransportRecord,
   User,
 } from "@/lib/domain/types";
 import { dataSource } from "@/services/data-source";
@@ -200,10 +206,71 @@ export function useProductions() {
 }
 
 export function useCreateProduction() {
+  const queryClient = useQueryClient();
   return useMutation<Production, Error, Omit<Production, "id" | "status" | "date" | "chantierId">>({
     mutationFn: dataSource.productionService.create as (
       input: Omit<Production, "id" | "status" | "date" | "chantierId">,
     ) => Promise<Production>,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["productions"] });
+      void queryClient.invalidateQueries({ queryKey: ["validations"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useMaterialPurchases(chantierId: string) {
+  return useQuery<MaterialPurchase[]>({
+    queryKey: ["matieres", chantierId],
+    queryFn: () => dataSource.matieresService.listPurchases(chantierId),
+  });
+}
+
+export function useCreateMaterialPurchase() {
+  const queryClient = useQueryClient();
+  return useMutation<MaterialPurchase, Error, Omit<MaterialPurchase, "id" | "status" | "hasDocument" | "totalHt" | "totalTtc" | "paidAmount" | "remainingAmount"> & { submit: boolean }>({
+    mutationFn: dataSource.matieresService.createPurchase as (
+      input: Omit<MaterialPurchase, "id" | "status" | "hasDocument" | "totalHt" | "totalTtc" | "paidAmount" | "remainingAmount"> & { submit: boolean },
+    ) => Promise<MaterialPurchase>,
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ["matieres", variables.chantierId] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useSupplierPayments(chantierId: string) {
+  return useQuery<SupplierPayment[]>({
+    queryKey: ["fournisseurs", "payments", chantierId],
+    queryFn: () => dataSource.fournisseurService.listPayments(chantierId),
+  });
+}
+
+export function useEtpOverview(chantierId: string) {
+  return useQuery<EtpOverview>({
+    queryKey: ["etp", chantierId],
+    queryFn: () => dataSource.etpService.overview(chantierId),
+  });
+}
+
+export function useTransportRecords(chantierId: string) {
+  return useQuery<TransportRecord[]>({
+    queryKey: ["transport", chantierId],
+    queryFn: () => dataSource.transportService.list(chantierId),
+  });
+}
+
+export function useMaintenanceRecords(chantierId: string) {
+  return useQuery<MaintenanceRecord[]>({
+    queryKey: ["entretien", chantierId],
+    queryFn: () => dataSource.entretienService.list(chantierId),
+  });
+}
+
+export function useBqOverview(chantierId: string) {
+  return useQuery<BqOverview>({
+    queryKey: ["bq", chantierId],
+    queryFn: () => dataSource.bqService.overview(chantierId),
   });
 }
 

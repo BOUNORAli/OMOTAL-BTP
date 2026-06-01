@@ -1,6 +1,6 @@
 # OMOTAL TRAVAUX - Gestion de chantiers
 
-Socle initial de la plateforme web et mobile de gestion de chantiers OMOTAL TRAVAUX.
+Socle ERP web et mobile de gestion de chantiers OMOTAL TRAVAUX.
 
 ## Demarrage frontend seul
 
@@ -24,6 +24,8 @@ Le backend expose :
 
 - API : `http://localhost:8080/api/v1`
 - Swagger UI : `http://localhost:8080/api/docs`
+- Modules MVP : chantiers, users, caisse, gasoil, personnel, engins, documents, validations, dashboard, exports `.xlsx`.
+- Modules ERP avances : production, matieres/fournisseurs, ETP, transport, entretien, BQ/rentabilite, preview import Excel.
 
 Comptes demo backend :
 
@@ -87,8 +89,17 @@ npm.cmd run pilot:frontend
 - Le responsable valide depuis `/app/validations`.
 - Ali verifie que le dashboard et le stock gasoil se mettent a jour.
 - Ali telecharge les rapports `.xlsx` depuis `/app/rapports`.
+- Le menu mobile s'ouvre avec le bouton hamburger en haut a gauche sur les pages `/app/*`.
 
 Les exports `.xlsx` incluent le chantier, la periode, l'utilisateur generateur, le filtre applique et les totaux.
+
+## CI et qualite
+
+GitHub Actions execute :
+
+- frontend : `npm ci`, `lint`, `typecheck`, `test`, `build`;
+- backend : `mvn -f backend/pom.xml test`;
+- image backend : `docker build -t omotal-backend ./backend`.
 
 ## Scripts
 

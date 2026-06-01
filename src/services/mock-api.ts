@@ -15,7 +15,26 @@ import {
   users,
 } from "@/lib/domain/mock-data";
 import { buildDashboardSummary, calculateGasoilStock } from "@/lib/domain/calculations";
-import type { CaisseTransaction, Chantier, Employee, Equipment, EquipmentTimesheet, GasoilEntry, GasoilExit, PersonnelTimesheet, Production, Supplier, User } from "@/lib/domain/types";
+import type {
+  BqOverview,
+  CaisseTransaction,
+  Chantier,
+  Employee,
+  Equipment,
+  EquipmentTimesheet,
+  EtpOverview,
+  GasoilEntry,
+  GasoilExit,
+  ImportPreview,
+  MaintenanceRecord,
+  MaterialPurchase,
+  PersonnelTimesheet,
+  Production,
+  Supplier,
+  SupplierPayment,
+  TransportRecord,
+  User,
+} from "@/lib/domain/types";
 
 const wait = (ms = 180) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -249,6 +268,100 @@ export const fournisseurService = {
       active: true,
       ...input,
     };
+  },
+
+  async listPayments(): Promise<SupplierPayment[]> {
+    await wait();
+    return [];
+  },
+
+  async createPayment(input: Omit<SupplierPayment, "id" | "status"> & { submit: boolean }) {
+    await wait(260);
+    return {
+      id: `supplier-payment-${Date.now()}`,
+      status: input.submit ? "valide" as const : "brouillon" as const,
+      ...input,
+    };
+  },
+};
+
+export const matieresService = {
+  async listPurchases(): Promise<MaterialPurchase[]> {
+    await wait();
+    return [];
+  },
+
+  async createPurchase(input: Omit<MaterialPurchase, "id" | "status" | "hasDocument" | "totalHt" | "totalTtc" | "paidAmount" | "remainingAmount"> & { submit: boolean }) {
+    await wait(260);
+    const totalHt = input.quantity * input.unitPriceHt + (input.transportHt ?? 0);
+    const totalTtc = totalHt * (1 + (input.vatRate ?? 0) / 100);
+    return {
+      id: `material-${Date.now()}`,
+      totalHt,
+      totalTtc,
+      paidAmount: 0,
+      remainingAmount: totalTtc,
+      hasDocument: false,
+      status: input.submit ? "soumis" as const : "brouillon" as const,
+      ...input,
+    };
+  },
+};
+
+export const etpService = {
+  async overview(): Promise<EtpOverview> {
+    await wait();
+    return { prestations: [], imputations: [], totalPrestations: 0, totalImputations: 0, remainingAmount: 0 };
+  },
+};
+
+export const transportService = {
+  async list(): Promise<TransportRecord[]> {
+    await wait();
+    return [];
+  },
+
+  async create(input: Omit<TransportRecord, "id" | "status" | "hasDocument" | "totalAmount"> & { submit: boolean }) {
+    await wait(260);
+    return {
+      id: `transport-${Date.now()}`,
+      totalAmount: input.trips * input.unitPrice,
+      hasDocument: false,
+      status: input.submit ? "soumis" as const : "brouillon" as const,
+      ...input,
+    };
+  },
+};
+
+export const entretienService = {
+  async list(): Promise<MaintenanceRecord[]> {
+    await wait();
+    return [];
+  },
+
+  async create(input: Omit<MaintenanceRecord, "id" | "status" | "hasDocument" | "totalAmount"> & { submit: boolean }) {
+    await wait(260);
+    return {
+      id: `maintenance-${Date.now()}`,
+      totalAmount: input.quantity * input.unitPrice,
+      hasDocument: false,
+      status: input.submit ? "soumis" as const : "brouillon" as const,
+      ...input,
+    };
+  },
+};
+
+export const bqService = {
+  async overview(): Promise<BqOverview> {
+    await wait();
+    return { articles: [], realisations: [] };
+  },
+};
+
+export const importService = {
+  async preview(file: File): Promise<ImportPreview> {
+    await wait(260);
+    return { fileName: file.name, sheetName: "Feuil1", headers: [], sampleRows: [], errors: [] };
   },
 };
 

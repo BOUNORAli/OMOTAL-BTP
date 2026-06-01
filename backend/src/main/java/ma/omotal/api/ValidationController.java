@@ -10,6 +10,7 @@ import ma.omotal.domain.enums.Role;
 import ma.omotal.repository.CaisseTransactionRepository;
 import ma.omotal.repository.EquipmentTimesheetRepository;
 import ma.omotal.repository.GasoilExitRepository;
+import ma.omotal.repository.ProductionRecordRepository;
 import ma.omotal.security.AccessPolicy;
 import ma.omotal.security.CurrentUserService;
 import ma.omotal.service.ValidationWorkflowService;
@@ -26,6 +27,7 @@ public class ValidationController {
   private final GasoilExitRepository gasoilExits;
   private final EquipmentTimesheetRepository equipmentTimesheets;
   private final CaisseTransactionRepository transactions;
+  private final ProductionRecordRepository productions;
   private final CurrentUserService currentUser;
   private final AccessPolicy accessPolicy;
   private final ValidationWorkflowService workflow;
@@ -34,6 +36,7 @@ public class ValidationController {
       GasoilExitRepository gasoilExits,
       EquipmentTimesheetRepository equipmentTimesheets,
       CaisseTransactionRepository transactions,
+      ProductionRecordRepository productions,
       CurrentUserService currentUser,
       AccessPolicy accessPolicy,
       ValidationWorkflowService workflow
@@ -41,6 +44,7 @@ public class ValidationController {
     this.gasoilExits = gasoilExits;
     this.equipmentTimesheets = equipmentTimesheets;
     this.transactions = transactions;
+    this.productions = productions;
     this.currentUser = currentUser;
     this.accessPolicy = accessPolicy;
     this.workflow = workflow;
@@ -72,6 +76,13 @@ public class ValidationController {
         .map(item -> new CoreDtos.ValidationItemDto(
             item.getId(), "CAISSE_TRANSACTION", item.getChantierId(), item.getDate(), item.getDescription(),
             item.getAmount() + " DH", item.getStatus(), item.isHasDocument()))
+        .forEach(items::add);
+
+    productions.findByStatus(OperationStatus.SOUMIS).stream()
+        .filter(item -> accessPolicy.canAccessChantier(user, item.getChantierId()))
+        .map(item -> new CoreDtos.ValidationItemDto(
+            item.getId(), "PRODUCTION_RECORD", item.getChantierId(), item.getDate(), item.getWorkType(),
+            item.getQuantity() + " " + item.getUnit(), item.getStatus(), false))
         .forEach(items::add);
 
     return items;
@@ -118,6 +129,15 @@ public class ValidationController {
         item.setStatus(toStatus);
         item.setValidatedByUserId(user.getId());
         transactions.save(item);
+      }
+      case "PRODUCTION_RECORD" -> {
+        var item = productions.findById(id).orElseThrow();
+        accessPolicy.requireChantier(user, item.getChantierId());
+        var from = item.getStatus();
+        workflow.record(type, id, user.getId(), from, toStatus, reason);
+        item.setStatus(toStatus);
+        item.setValidatedByUserId(user.getId());
+        productions.save(item);
       }
       default -> throw new IllegalArgumentException("Type de validation inconnu.");
     }

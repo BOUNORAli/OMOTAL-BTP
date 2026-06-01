@@ -22,6 +22,8 @@ export type OperationStatus =
   | "annule"
   | "verrouille";
 
+export type SyncStatus = "local" | "syncing" | "synced" | "error" | "conflict";
+
 export type PaymentMode =
   | "especes_omotal"
   | "banque_omotal"
@@ -152,6 +154,7 @@ export interface GasoilExit {
   status: OperationStatus;
   hasDocument: boolean;
   enteredByUserId: string;
+  syncStatus?: SyncStatus;
 }
 
 export interface PersonnelTimesheet {
@@ -191,6 +194,7 @@ export interface EquipmentTimesheet {
   appliedHourlyRate?: number;
   appliedDailyRate?: number;
   status: OperationStatus;
+  syncStatus?: SyncStatus;
 }
 
 export interface Alert {
@@ -198,7 +202,7 @@ export interface Alert {
   severity: "info" | "warning" | "critical";
   title: string;
   description: string;
-  module: "caisse" | "gasoil" | "personnel" | "engins";
+  module: "caisse" | "gasoil" | "personnel" | "engins" | "production" | "fournisseurs" | "etp" | "transport" | "entretien" | "bq";
   chantierId: string;
 }
 
@@ -219,6 +223,148 @@ export interface Production {
   unit: "m3" | "m2" | "ml" | "u" | "t";
   hours?: number;
   status: OperationStatus;
+  rendement?: number;
+  syncStatus?: SyncStatus;
+}
+
+export interface MaterialPurchase {
+  id: string;
+  date: string;
+  chantierId: string;
+  supplierId: string;
+  designation: string;
+  unit: string;
+  quantity: number;
+  unitPriceHt: number;
+  transportHt: number;
+  totalHt: number;
+  vatRate: number;
+  totalTtc: number;
+  receiptNumber?: string;
+  supplierDocumentNumber?: string;
+  dueDate?: string;
+  paidAmount: number;
+  remainingAmount: number;
+  status: OperationStatus;
+  hasDocument: boolean;
+}
+
+export interface SupplierPayment {
+  id: string;
+  date: string;
+  chantierId: string;
+  supplierId: string;
+  amount: number;
+  paymentMode: PaymentMode;
+  status: OperationStatus;
+  note?: string;
+}
+
+export interface EtpPrestation {
+  id: string;
+  date: string;
+  chantierId: string;
+  supplierId: string;
+  designation: string;
+  quantity: number;
+  unitPrice: number;
+  amountHt: number;
+  vatRate: number;
+  amountTtc: number;
+  status: OperationStatus;
+}
+
+export interface EtpImputation {
+  id: string;
+  date: string;
+  chantierId: string;
+  supplierId: string;
+  imputationType: string;
+  amount: number;
+  note?: string;
+  status: OperationStatus;
+}
+
+export interface EtpOverview {
+  prestations: EtpPrestation[];
+  imputations: EtpImputation[];
+  totalPrestations: number;
+  totalImputations: number;
+  remainingAmount: number;
+}
+
+export interface TransportRecord {
+  id: string;
+  date: string;
+  chantierId: string;
+  supplierId: string;
+  designation: string;
+  departure?: string;
+  arrival?: string;
+  trips: number;
+  unitPrice: number;
+  totalAmount: number;
+  receiptNumber?: string;
+  allocation?: string;
+  status: OperationStatus;
+  hasDocument: boolean;
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  date: string;
+  chantierId: string;
+  equipmentId: string;
+  supplierId?: string;
+  interventionType: string;
+  designation: string;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+  immobilized: boolean;
+  downtimeDays?: number;
+  status: OperationStatus;
+  hasDocument: boolean;
+}
+
+export interface BqArticle {
+  id: string;
+  chantierId: string;
+  articleNumber: string;
+  designation: string;
+  unit: string;
+  marketQuantity: number;
+  marketUnitPriceHt: number;
+  marketAmountHt: number;
+  plannedCostTotal: number;
+  realisedQuantity: number;
+  realisedAmountHt: number;
+  progressRate: number;
+  realMargin: number;
+  active: boolean;
+}
+
+export interface BqRealisation {
+  id: string;
+  date: string;
+  chantierId: string;
+  bqArticleId: string;
+  quantity: number;
+  source: string;
+  status: OperationStatus;
+}
+
+export interface BqOverview {
+  articles: BqArticle[];
+  realisations: BqRealisation[];
+}
+
+export interface ImportPreview {
+  fileName: string;
+  sheetName: string;
+  headers: string[];
+  sampleRows: string[][];
+  errors: string[];
 }
 
 export interface DashboardSummary {

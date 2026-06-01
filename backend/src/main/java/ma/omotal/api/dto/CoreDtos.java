@@ -229,6 +229,299 @@ public final class CoreDtos {
   ) {
   }
 
+  public record ProductionRecordDto(
+      UUID id,
+      LocalDate date,
+      UUID chantierId,
+      String voie,
+      String tranche,
+      String troncon,
+      String workType,
+      UUID equipmentId,
+      String driver,
+      BigDecimal lengthValue,
+      BigDecimal widthValue,
+      BigDecimal depthValue,
+      BigDecimal quantity,
+      String unit,
+      BigDecimal hours,
+      BigDecimal rendement,
+      OperationStatus status
+  ) {
+  }
+
+  public record CreateProductionRecordRequest(
+      @NotNull LocalDate date,
+      @NotNull UUID chantierId,
+      @NotBlank String voie,
+      String tranche,
+      String troncon,
+      @NotBlank String workType,
+      UUID equipmentId,
+      String driver,
+      BigDecimal lengthValue,
+      BigDecimal widthValue,
+      BigDecimal depthValue,
+      BigDecimal quantity,
+      @NotBlank String unit,
+      BigDecimal hours,
+      boolean submit
+  ) {
+  }
+
+  public record MaterialPurchaseDto(
+      UUID id,
+      LocalDate date,
+      UUID chantierId,
+      UUID supplierId,
+      String designation,
+      String unit,
+      BigDecimal quantity,
+      BigDecimal unitPriceHt,
+      BigDecimal transportHt,
+      BigDecimal totalHt,
+      BigDecimal vatRate,
+      BigDecimal totalTtc,
+      String receiptNumber,
+      String supplierDocumentNumber,
+      LocalDate dueDate,
+      BigDecimal paidAmount,
+      BigDecimal remainingAmount,
+      OperationStatus status,
+      boolean hasDocument
+  ) {
+  }
+
+  public record CreateMaterialPurchaseRequest(
+      @NotNull LocalDate date,
+      @NotNull UUID chantierId,
+      @NotNull UUID supplierId,
+      @NotBlank String designation,
+      @NotBlank String unit,
+      @Positive BigDecimal quantity,
+      @Positive BigDecimal unitPriceHt,
+      BigDecimal transportHt,
+      BigDecimal vatRate,
+      String receiptNumber,
+      String supplierDocumentNumber,
+      LocalDate dueDate,
+      boolean submit
+  ) {
+  }
+
+  public record SupplierPaymentDto(
+      UUID id,
+      LocalDate date,
+      UUID chantierId,
+      UUID supplierId,
+      BigDecimal amount,
+      PaymentMode paymentMode,
+      OperationStatus status,
+      String note
+  ) {
+  }
+
+  public record CreateSupplierPaymentRequest(
+      @NotNull LocalDate date,
+      @NotNull UUID chantierId,
+      @NotNull UUID supplierId,
+      @Positive BigDecimal amount,
+      @NotNull PaymentMode paymentMode,
+      String note,
+      boolean submit
+  ) {
+  }
+
+  public record EtpPrestationDto(
+      UUID id,
+      LocalDate date,
+      UUID chantierId,
+      UUID supplierId,
+      String designation,
+      BigDecimal quantity,
+      BigDecimal unitPrice,
+      BigDecimal amountHt,
+      BigDecimal vatRate,
+      BigDecimal amountTtc,
+      OperationStatus status
+  ) {
+  }
+
+  public record CreateEtpPrestationRequest(
+      @NotNull LocalDate date,
+      @NotNull UUID chantierId,
+      @NotNull UUID supplierId,
+      @NotBlank String designation,
+      @Positive BigDecimal quantity,
+      @Positive BigDecimal unitPrice,
+      BigDecimal vatRate,
+      boolean submit
+  ) {
+  }
+
+  public record EtpImputationDto(
+      UUID id,
+      LocalDate date,
+      UUID chantierId,
+      UUID supplierId,
+      String imputationType,
+      BigDecimal amount,
+      String note,
+      OperationStatus status
+  ) {
+  }
+
+  public record CreateEtpImputationRequest(
+      @NotNull LocalDate date,
+      @NotNull UUID chantierId,
+      @NotNull UUID supplierId,
+      @NotBlank String imputationType,
+      @Positive BigDecimal amount,
+      String note,
+      boolean submit
+  ) {
+  }
+
+  public record EtpOverviewDto(
+      List<EtpPrestationDto> prestations,
+      List<EtpImputationDto> imputations,
+      BigDecimal totalPrestations,
+      BigDecimal totalImputations,
+      BigDecimal remainingAmount
+  ) {
+  }
+
+  public record TransportRecordDto(
+      UUID id,
+      LocalDate date,
+      UUID chantierId,
+      UUID supplierId,
+      String designation,
+      String departure,
+      String arrival,
+      BigDecimal trips,
+      BigDecimal unitPrice,
+      BigDecimal totalAmount,
+      String receiptNumber,
+      String allocation,
+      OperationStatus status,
+      boolean hasDocument
+  ) {
+  }
+
+  public record CreateTransportRecordRequest(
+      @NotNull LocalDate date,
+      @NotNull UUID chantierId,
+      @NotNull UUID supplierId,
+      @NotBlank String designation,
+      String departure,
+      String arrival,
+      @Positive BigDecimal trips,
+      @Positive BigDecimal unitPrice,
+      String receiptNumber,
+      String allocation,
+      boolean submit
+  ) {
+  }
+
+  public record MaintenanceRecordDto(
+      UUID id,
+      LocalDate date,
+      UUID chantierId,
+      UUID equipmentId,
+      UUID supplierId,
+      String interventionType,
+      String designation,
+      BigDecimal quantity,
+      BigDecimal unitPrice,
+      BigDecimal totalAmount,
+      boolean immobilized,
+      BigDecimal downtimeDays,
+      OperationStatus status,
+      boolean hasDocument
+  ) {
+  }
+
+  public record CreateMaintenanceRecordRequest(
+      @NotNull LocalDate date,
+      @NotNull UUID chantierId,
+      @NotNull UUID equipmentId,
+      UUID supplierId,
+      @NotBlank String interventionType,
+      @NotBlank String designation,
+      @Positive BigDecimal quantity,
+      @Positive BigDecimal unitPrice,
+      boolean immobilized,
+      BigDecimal downtimeDays,
+      boolean submit
+  ) {
+  }
+
+  public record BqArticleDto(
+      UUID id,
+      UUID chantierId,
+      String articleNumber,
+      String designation,
+      String unit,
+      BigDecimal marketQuantity,
+      BigDecimal marketUnitPriceHt,
+      BigDecimal marketAmountHt,
+      BigDecimal plannedCostTotal,
+      BigDecimal realisedQuantity,
+      BigDecimal realisedAmountHt,
+      BigDecimal progressRate,
+      BigDecimal realMargin,
+      boolean active
+  ) {
+  }
+
+  public record CreateBqArticleRequest(
+      @NotNull UUID chantierId,
+      @NotBlank String articleNumber,
+      @NotBlank String designation,
+      @NotBlank String unit,
+      @Positive BigDecimal marketQuantity,
+      @Positive BigDecimal marketUnitPriceHt,
+      BigDecimal plannedCostTotal
+  ) {
+  }
+
+  public record BqRealisationDto(
+      UUID id,
+      LocalDate date,
+      UUID chantierId,
+      UUID bqArticleId,
+      BigDecimal quantity,
+      String source,
+      OperationStatus status
+  ) {
+  }
+
+  public record CreateBqRealisationRequest(
+      @NotNull LocalDate date,
+      @NotNull UUID chantierId,
+      @NotNull UUID bqArticleId,
+      @Positive BigDecimal quantity,
+      @NotBlank String source,
+      boolean submit
+  ) {
+  }
+
+  public record BqOverviewDto(
+      List<BqArticleDto> articles,
+      List<BqRealisationDto> realisations
+  ) {
+  }
+
+  public record ImportPreviewDto(
+      String fileName,
+      String sheetName,
+      List<String> headers,
+      List<List<String>> sampleRows,
+      List<String> errors
+  ) {
+  }
+
   public record EquipmentTimesheetDto(
       UUID id,
       LocalDate date,

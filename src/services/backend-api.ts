@@ -1,6 +1,7 @@
-import { activeChantier, productions } from "@/lib/domain/mock-data";
+import { activeChantier } from "@/lib/domain/mock-data";
 import type {
   Alert,
+  BqOverview,
   CaisseTransaction,
   Chantier,
   DashboardSummary,
@@ -8,12 +9,18 @@ import type {
   Employee,
   Equipment,
   EquipmentTimesheet,
+  EtpOverview,
   GasoilEntry,
   GasoilExit,
+  ImportPreview,
+  MaintenanceRecord,
+  MaterialPurchase,
   PersonnelAdvance,
   PersonnelTimesheet,
   Production,
+  SupplierPayment,
   Supplier,
+  TransportRecord,
   User,
 } from "@/lib/domain/types";
 import { apiDownload, apiFetch, getPersistedSelectedChantierId, normalizeRole } from "./api-client";
@@ -196,6 +203,42 @@ type BackendDashboardSummary = {
   alerts: BackendAlert[];
 };
 
+type BackendProduction = {
+  id: string;
+  date: string;
+  chantierId: string;
+  voie: string;
+  tranche?: string;
+  troncon?: string;
+  workType: string;
+  equipmentId?: string;
+  driver?: string;
+  lengthValue?: number;
+  widthValue?: number;
+  depthValue?: number;
+  quantity: number;
+  unit: string;
+  hours?: number;
+  rendement?: number;
+  status: string;
+};
+
+type BackendMaterialPurchase = Omit<MaterialPurchase, "status"> & { status: string };
+type BackendSupplierPayment = Omit<SupplierPayment, "paymentMode" | "status"> & { paymentMode: string; status: string };
+type BackendEtpOverview = {
+  prestations: Array<Omit<EtpOverview["prestations"][number], "status"> & { status: string }>;
+  imputations: Array<Omit<EtpOverview["imputations"][number], "status"> & { status: string }>;
+  totalPrestations: number;
+  totalImputations: number;
+  remainingAmount: number;
+};
+type BackendTransportRecord = Omit<TransportRecord, "status"> & { status: string };
+type BackendMaintenanceRecord = Omit<MaintenanceRecord, "status"> & { status: string };
+type BackendBqOverview = {
+  articles: BqOverview["articles"];
+  realisations: Array<Omit<BqOverview["realisations"][number], "status"> & { status: string }>;
+};
+
 function userFromBackend(user: BackendUser): User {
   return {
     id: user.id,
@@ -372,6 +415,78 @@ function documentFromBackend(item: BackendDocument): DocumentRecord {
     module: item.module,
     targetType: item.targetType,
     targetId: item.targetId,
+  };
+}
+
+function productionFromBackend(item: BackendProduction): Production {
+  return {
+    id: item.id,
+    date: item.date,
+    chantierId: item.chantierId,
+    voie: item.voie,
+    tranche: item.tranche,
+    troncon: item.troncon,
+    workType: item.workType,
+    equipmentId: item.equipmentId,
+    driver: item.driver,
+    length: item.lengthValue,
+    width: item.widthValue,
+    depth: item.depthValue,
+    quantity: item.quantity,
+    unit: item.unit.toLowerCase() as Production["unit"],
+    hours: item.hours,
+    rendement: item.rendement,
+    status: status(item.status),
+    syncStatus: "synced",
+  };
+}
+
+function materialPurchaseFromBackend(item: BackendMaterialPurchase): MaterialPurchase {
+  return {
+    ...item,
+    status: status(item.status),
+  };
+}
+
+function supplierPaymentFromBackend(item: BackendSupplierPayment): SupplierPayment {
+  return {
+    ...item,
+    paymentMode: status(item.paymentMode),
+    status: status(item.status),
+  };
+}
+
+function etpOverviewFromBackend(item: BackendEtpOverview): EtpOverview {
+  return {
+    totalPrestations: item.totalPrestations,
+    totalImputations: item.totalImputations,
+    remainingAmount: item.remainingAmount,
+    prestations: item.prestations.map((prestation) => ({ ...prestation, status: status(prestation.status) })),
+    imputations: item.imputations.map((imputation) => ({ ...imputation, status: status(imputation.status) })),
+  };
+}
+
+function transportFromBackend(item: BackendTransportRecord): TransportRecord {
+  return {
+    ...item,
+    status: status(item.status),
+  };
+}
+
+function maintenanceFromBackend(item: BackendMaintenanceRecord): MaintenanceRecord {
+  return {
+    ...item,
+    status: status(item.status),
+  };
+}
+
+function bqFromBackend(item: BackendBqOverview): BqOverview {
+  return {
+    articles: item.articles,
+    realisations: item.realisations.map((realisation) => ({
+      ...realisation,
+      status: status(realisation.status),
+    })),
   };
 }
 
@@ -590,16 +705,88 @@ export const backendApi = {
   },
   productionService: {
     async list() {
-      return productions;
+      const chantierId = getPersistedSelectedChantierId() ?? activeChantier.id;
+      const data = await apiFetch<BackendProduction[]>(`/api/v1/production?chantierId=${chantierId}`);
+      return data.map(productionFromBackend);
     },
     async create(input: Omit<Production, "id" | "status" | "date" | "chantierId">) {
-      return {
-        id: `production-local-${Date.now()}`,
-        chantierId: getPersistedSelectedChantierId() ?? activeChantier.id,
-        date: new Date().toISOString(),
-        status: "soumis" as const,
-        ...input,
-      };
+      const chantierId = getPersistedSelectedChantierId() ?? activeChantier.id;
+      return productionFromBackend(await apiFetch<BackendProduction>("/api/v1/production", {
+        method: "POST",
+        body: JSON.stringify({
+          date: new Date().toISOString().slice(0, 10),
+          chantierId,
+          voie: input.voie,
+          tranche: input.tranche,
+          troncon: input.troncon,
+          workType: input.workType,
+          equipmentId: input.equipmentId || undefined,
+          driver: input.driver,
+          lengthValue: input.length,
+          widthValue: input.width,
+          depthValue: input.depth,
+          quantity: input.quantity,
+          unit: upper(input.unit),
+          hours: input.hours,
+          submit: true,
+        }),
+      }));
+    },
+  },
+  matieresService: {
+    async listPurchases(chantierId: string) {
+      const data = await apiFetch<BackendMaterialPurchase[]>(`/api/v1/matieres?chantierId=${chantierId}`);
+      return data.map(materialPurchaseFromBackend);
+    },
+    async createPurchase(input: Omit<MaterialPurchase, "id" | "status" | "hasDocument" | "totalHt" | "totalTtc" | "paidAmount" | "remainingAmount"> & { submit: boolean }) {
+      return materialPurchaseFromBackend(await apiFetch<BackendMaterialPurchase>("/api/v1/matieres", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }));
+    },
+  },
+  etpService: {
+    async overview(chantierId: string) {
+      return etpOverviewFromBackend(await apiFetch<BackendEtpOverview>(`/api/v1/etp?chantierId=${chantierId}`));
+    },
+  },
+  transportService: {
+    async list(chantierId: string) {
+      const data = await apiFetch<BackendTransportRecord[]>(`/api/v1/transport?chantierId=${chantierId}`);
+      return data.map(transportFromBackend);
+    },
+    async create(input: Omit<TransportRecord, "id" | "status" | "hasDocument" | "totalAmount"> & { submit: boolean }) {
+      return transportFromBackend(await apiFetch<BackendTransportRecord>("/api/v1/transport", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }));
+    },
+  },
+  entretienService: {
+    async list(chantierId: string) {
+      const data = await apiFetch<BackendMaintenanceRecord[]>(`/api/v1/entretien?chantierId=${chantierId}`);
+      return data.map(maintenanceFromBackend);
+    },
+    async create(input: Omit<MaintenanceRecord, "id" | "status" | "hasDocument" | "totalAmount"> & { submit: boolean }) {
+      return maintenanceFromBackend(await apiFetch<BackendMaintenanceRecord>("/api/v1/entretien", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }));
+    },
+  },
+  bqService: {
+    async overview(chantierId: string) {
+      return bqFromBackend(await apiFetch<BackendBqOverview>(`/api/v1/bq?chantierId=${chantierId}`));
+    },
+  },
+  importService: {
+    async preview(file: File): Promise<ImportPreview> {
+      const formData = new FormData();
+      formData.set("file", file);
+      return apiFetch<ImportPreview>("/api/v1/imports/preview", {
+        method: "POST",
+        body: formData,
+      });
     },
   },
   fournisseurService: {
@@ -613,6 +800,19 @@ export const backendApi = {
         body: JSON.stringify({
           ...input,
           type: upper(input.type),
+        }),
+      }));
+    },
+    async listPayments(chantierId: string) {
+      const data = await apiFetch<BackendSupplierPayment[]>(`/api/v1/fournisseurs/payments?chantierId=${chantierId}`);
+      return data.map(supplierPaymentFromBackend);
+    },
+    async createPayment(input: Omit<SupplierPayment, "id" | "status"> & { submit: boolean }) {
+      return supplierPaymentFromBackend(await apiFetch<BackendSupplierPayment>("/api/v1/fournisseurs/payments", {
+        method: "POST",
+        body: JSON.stringify({
+          ...input,
+          paymentMode: upper(input.paymentMode),
         }),
       }));
     },

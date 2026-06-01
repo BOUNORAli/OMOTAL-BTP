@@ -1,18 +1,29 @@
 package ma.omotal.api;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import ma.omotal.api.dto.CoreDtos;
+import ma.omotal.domain.BqArticleEntity;
+import ma.omotal.domain.BqRealisationEntity;
 import ma.omotal.domain.CaisseTransactionEntity;
 import ma.omotal.domain.ChantierEntity;
 import ma.omotal.domain.DocumentEntity;
 import ma.omotal.domain.EmployeeEntity;
 import ma.omotal.domain.EquipmentEntity;
 import ma.omotal.domain.EquipmentTimesheetEntity;
+import ma.omotal.domain.EtpImputationEntity;
+import ma.omotal.domain.EtpPrestationEntity;
 import ma.omotal.domain.GasoilEntryEntity;
 import ma.omotal.domain.GasoilExitEntity;
+import ma.omotal.domain.MaintenanceRecordEntity;
+import ma.omotal.domain.MaterialPurchaseEntity;
 import ma.omotal.domain.PersonnelAdvanceEntity;
 import ma.omotal.domain.PersonnelTimesheetEntity;
+import ma.omotal.domain.ProductionRecordEntity;
 import ma.omotal.domain.SupplierEntity;
+import ma.omotal.domain.SupplierPaymentEntity;
+import ma.omotal.domain.TransportRecordEntity;
 import ma.omotal.service.CalculationService;
 
 public final class Mapper {
@@ -158,6 +169,165 @@ public final class Mapper {
     );
   }
 
+  public static CoreDtos.ProductionRecordDto production(ProductionRecordEntity item) {
+    return new CoreDtos.ProductionRecordDto(
+        item.getId(),
+        item.getDate(),
+        item.getChantierId(),
+        item.getVoie(),
+        item.getTranche(),
+        item.getTroncon(),
+        item.getWorkType(),
+        item.getEquipmentId(),
+        item.getDriver(),
+        item.getLengthValue(),
+        item.getWidthValue(),
+        item.getDepthValue(),
+        item.getQuantity(),
+        item.getUnit(),
+        item.getHours(),
+        ratio(item.getQuantity(), item.getHours()),
+        item.getStatus()
+    );
+  }
+
+  public static CoreDtos.MaterialPurchaseDto materialPurchase(MaterialPurchaseEntity item) {
+    return new CoreDtos.MaterialPurchaseDto(
+        item.getId(),
+        item.getDate(),
+        item.getChantierId(),
+        item.getSupplierId(),
+        item.getDesignation(),
+        item.getUnit(),
+        item.getQuantity(),
+        item.getUnitPriceHt(),
+        item.getTransportHt(),
+        item.getTotalHt(),
+        item.getVatRate(),
+        item.getTotalTtc(),
+        item.getReceiptNumber(),
+        item.getSupplierDocumentNumber(),
+        item.getDueDate(),
+        item.getPaidAmount(),
+        nvl(item.getTotalTtc()).subtract(nvl(item.getPaidAmount())),
+        item.getStatus(),
+        item.isHasDocument()
+    );
+  }
+
+  public static CoreDtos.SupplierPaymentDto supplierPayment(SupplierPaymentEntity item) {
+    return new CoreDtos.SupplierPaymentDto(
+        item.getId(),
+        item.getDate(),
+        item.getChantierId(),
+        item.getSupplierId(),
+        item.getAmount(),
+        item.getPaymentMode(),
+        item.getStatus(),
+        item.getNote()
+    );
+  }
+
+  public static CoreDtos.EtpPrestationDto etpPrestation(EtpPrestationEntity item) {
+    return new CoreDtos.EtpPrestationDto(
+        item.getId(),
+        item.getDate(),
+        item.getChantierId(),
+        item.getSupplierId(),
+        item.getDesignation(),
+        item.getQuantity(),
+        item.getUnitPrice(),
+        item.getAmountHt(),
+        item.getVatRate(),
+        item.getAmountTtc(),
+        item.getStatus()
+    );
+  }
+
+  public static CoreDtos.EtpImputationDto etpImputation(EtpImputationEntity item) {
+    return new CoreDtos.EtpImputationDto(
+        item.getId(),
+        item.getDate(),
+        item.getChantierId(),
+        item.getSupplierId(),
+        item.getImputationType(),
+        item.getAmount(),
+        item.getNote(),
+        item.getStatus()
+    );
+  }
+
+  public static CoreDtos.TransportRecordDto transport(TransportRecordEntity item) {
+    return new CoreDtos.TransportRecordDto(
+        item.getId(),
+        item.getDate(),
+        item.getChantierId(),
+        item.getSupplierId(),
+        item.getDesignation(),
+        item.getDeparture(),
+        item.getArrival(),
+        item.getTrips(),
+        item.getUnitPrice(),
+        item.getTotalAmount(),
+        item.getReceiptNumber(),
+        item.getAllocation(),
+        item.getStatus(),
+        item.isHasDocument()
+    );
+  }
+
+  public static CoreDtos.MaintenanceRecordDto maintenance(MaintenanceRecordEntity item) {
+    return new CoreDtos.MaintenanceRecordDto(
+        item.getId(),
+        item.getDate(),
+        item.getChantierId(),
+        item.getEquipmentId(),
+        item.getSupplierId(),
+        item.getInterventionType(),
+        item.getDesignation(),
+        item.getQuantity(),
+        item.getUnitPrice(),
+        item.getTotalAmount(),
+        item.isImmobilized(),
+        item.getDowntimeDays(),
+        item.getStatus(),
+        item.isHasDocument()
+    );
+  }
+
+  public static CoreDtos.BqArticleDto bqArticle(BqArticleEntity item, BigDecimal realisedQuantity) {
+    var marketAmount = nvl(item.getMarketQuantity()).multiply(nvl(item.getMarketUnitPriceHt()));
+    var realisedAmount = nvl(realisedQuantity).multiply(nvl(item.getMarketUnitPriceHt()));
+    return new CoreDtos.BqArticleDto(
+        item.getId(),
+        item.getChantierId(),
+        item.getArticleNumber(),
+        item.getDesignation(),
+        item.getUnit(),
+        item.getMarketQuantity(),
+        item.getMarketUnitPriceHt(),
+        marketAmount,
+        item.getPlannedCostTotal(),
+        nvl(realisedQuantity),
+        realisedAmount,
+        ratio(nvl(realisedQuantity).multiply(new BigDecimal("100")), item.getMarketQuantity()),
+        realisedAmount.subtract(nvl(item.getPlannedCostTotal())),
+        item.isActive()
+    );
+  }
+
+  public static CoreDtos.BqRealisationDto bqRealisation(BqRealisationEntity item) {
+    return new CoreDtos.BqRealisationDto(
+        item.getId(),
+        item.getDate(),
+        item.getChantierId(),
+        item.getBqArticleId(),
+        item.getQuantity(),
+        item.getSource(),
+        item.getStatus()
+    );
+  }
+
   public static CoreDtos.EquipmentTimesheetDto equipmentTimesheet(EquipmentTimesheetEntity item) {
     return new CoreDtos.EquipmentTimesheetDto(
         item.getId(),
@@ -176,5 +346,16 @@ public final class Mapper {
 
   public static String formatDh(BigDecimal amount) {
     return amount.stripTrailingZeros().toPlainString() + " DH";
+  }
+
+  private static BigDecimal ratio(BigDecimal value, BigDecimal divisor) {
+    if (value == null || divisor == null || divisor.compareTo(BigDecimal.ZERO) == 0) {
+      return BigDecimal.ZERO;
+    }
+    return value.divide(divisor, MathContext.DECIMAL64).setScale(2, RoundingMode.HALF_UP);
+  }
+
+  private static BigDecimal nvl(BigDecimal value) {
+    return value == null ? BigDecimal.ZERO : value;
   }
 }

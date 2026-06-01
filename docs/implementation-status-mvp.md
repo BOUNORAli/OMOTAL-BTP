@@ -7,24 +7,25 @@
 - Backend Spring Boot cree dans `backend/`.
 - Schema PostgreSQL Flyway pour le MVP Phase 1.
 - Auth JWT, roles serveur et isolation chantier.
-- API v1 initiale : auth, chantiers, caisse, gasoil, personnel, engins, fournisseurs, validations, documents, dashboard, exports CSV.
+- API v1 initiale : auth, chantiers, caisse, gasoil, personnel, engins, fournisseurs, validations, documents, dashboard, exports `.xlsx`.
+- Fondations ERP avancees ajoutees : production/rendements, achats matieres, paiements fournisseurs, ETP, transport, entretien, BQ/rentabilite et preview import Excel.
 - Donnees demo chargees automatiquement en dev si la base est vide.
-- Frontend conserve en mode mock par defaut, avec bascule backend via `NEXT_PUBLIC_API_BASE_URL`.
+- Frontend conserve en mode mock par defaut, avec bascule backend via `NEXT_PUBLIC_API_BASE_URL`, et pages avancees branchees sur les endpoints quand le backend est actif.
 - Login frontend compatible JWT backend, avec profils demo mot de passe `password`.
-- Docker Compose PostgreSQL et scripts backup/restauration.
+- Docker Compose PostgreSQL, scripts backup/restauration et CI GitHub Actions.
 
 ## Restant MVP prioritaire
 
-- Finaliser les formulaires frontend reels : creation chantier, users, fournisseurs, engins, employes, transaction, entree gasoil, pointage personnel, pointage engin.
-- Ajouter upload fichier reel pour `documents` avec stockage local dev puis S3/MinIO.
-- Remplacer les exports CSV par XLSX si le format Excel natif est obligatoire.
-- Ajouter les actions frontend de validation/rejet connectees aux endpoints.
-- Ajouter tests API complets avec MockMvc pour permissions, validation et isolation chantier.
-- Ajouter migrations pour imports Excel historiques en Phase 2.
+- Completer les formulaires avances pour matieres, ETP, transport, entretien et BQ avec le meme niveau de confort que gasoil/caisse.
+- Transformer la preview import Excel en import historique complet : mapping, corrections, doublons, rapport d'erreurs et import controle.
+- Ajouter exports PDF direction et rapports mensuels mis en page.
+- Ajouter offline mobile robuste : file locale, reprise upload photo, conflits et synchronisation visualisee.
+- Ajouter verrouillage des periodes et correction Super Admin tracee.
+- Ajouter monitoring production, alertes email et verification mensuelle des sauvegardes.
 
 ## Decisions ouvertes
 
 - Java local actuel : 17. La cible Java 21 reste possible en production apres installation JDK 21.
 - Seuil depense elevee par defaut : 30 000 DH.
 - Justificatifs : non bloquants en MVP technique, mais alertables.
-- Exports : CSV Excel-compatible pour cette iteration, XLSX natif a prioriser si Ali exige le format `.xlsx`.
+- Exports : `.xlsx` natif pour les rapports MVP ; PDF direction a ajouter apres stabilisation des modules avances.

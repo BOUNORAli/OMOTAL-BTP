@@ -41,6 +41,7 @@ export const appNavItems: AppNavItem[] = [
   { href: "/app/engins", icon: Truck, label: "Engins", permission: "engins.read" },
   { href: "/app/production", icon: HardHat, label: "Production", permission: "production.read" },
   { href: "/app/matieres", icon: Package, label: "Matieres", permission: "fournisseurs.read" },
+  { href: "/app/etp", icon: BriefcaseBusiness, label: "ETP / Sous-traitance", permission: "fournisseurs.read" },
   { href: "/app/transport", icon: BriefcaseBusiness, label: "Transport", permission: "fournisseurs.read" },
   { href: "/app/entretien", icon: Wrench, label: "Entretien", permission: "engins.read" },
   { href: "/app/bq", icon: Hammer, label: "BQ & Rentabilite", permission: "rentabilite.read" },

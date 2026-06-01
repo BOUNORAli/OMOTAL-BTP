@@ -9,20 +9,13 @@
 
 ## GitHub
 
-Le depot local est deja committe sur la branche `codex/omotal-mvp`. Il faut creer un repo GitHub vide puis pousser cette branche.
+Le depot est synchronise sur GitHub. La branche de travail reste `codex/omotal-mvp`, et `main` peut etre remplacee par cette branche quand un lot est valide.
 
-Commandes a executer apres creation du repo GitHub :
-
-```bash
-git remote add origin https://github.com/<ton-user>/<ton-repo>.git
-git push -u origin codex/omotal-mvp
-```
-
-Si tu veux que Vercel/Railway utilisent `main` comme branche de production :
+Commandes utiles :
 
 ```bash
-git branch -M main
-git push -u origin main
+git push origin codex/omotal-mvp
+git push origin codex/omotal-mvp:main
 ```
 
 ## Railway backend
@@ -33,6 +26,7 @@ git push -u origin main
 4. Dans le service backend, configurer :
    - Root Directory : `backend`
    - Config file path : `/backend/railway.toml`
+   - Runtime Java : Java 17 officiellement supporte par le projet actuel.
 5. Ajouter les variables du service backend :
 
 ```text
@@ -59,7 +53,7 @@ https://<ton-backend>.up.railway.app/api/docs
 ## Vercel frontend
 
 1. Importer le meme repo GitHub dans Vercel.
-2. Garder la racine du projet sur `/` parce que Next.js est a la racine.
+2. Garder la racine du projet sur `/` parce que Next.js est a la racine. Ne pas mettre `frontend` en Root Directory.
 3. Framework preset : Next.js.
 4. Build command : `npm run build`.
 5. Ajouter la variable :
@@ -92,4 +86,6 @@ Mot de passe : `password`
 - Ne jamais mettre `.env.local` sur GitHub.
 - Changer `OMOTAL_JWT_SECRET` avant production.
 - `OMOTAL_DEMO_DATA_ENABLED=true` charge les donnees demo seulement si la base est vide.
-- Les exports actuels sont CSV compatibles Excel ; le vrai XLSX reste une prochaine etape.
+- Les exports MVP sont de vrais fichiers `.xlsx`.
+- Les pages avancees utilisent le backend si `NEXT_PUBLIC_API_BASE_URL` est configure, sinon elles restent utilisables en mode mock.
+- La CI GitHub Actions lance lint, typecheck, tests frontend, build frontend, tests backend et build Docker backend.

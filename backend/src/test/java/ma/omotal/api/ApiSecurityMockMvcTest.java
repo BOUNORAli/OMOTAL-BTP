@@ -18,6 +18,7 @@ import ma.omotal.domain.EmployeeEntity;
 import ma.omotal.domain.EquipmentEntity;
 import ma.omotal.domain.EquipmentTimesheetEntity;
 import ma.omotal.domain.GasoilExitEntity;
+import ma.omotal.domain.SupplierEntity;
 import ma.omotal.domain.UserEntity;
 import ma.omotal.domain.enums.BillingMode;
 import ma.omotal.domain.enums.ChantierStatus;
@@ -27,9 +28,12 @@ import ma.omotal.domain.enums.OperationStatus;
 import ma.omotal.domain.enums.PaymentMode;
 import ma.omotal.domain.enums.RemunerationType;
 import ma.omotal.domain.enums.Role;
+import ma.omotal.domain.enums.SupplierType;
 import ma.omotal.domain.enums.TransactionCategory;
 import ma.omotal.domain.enums.TransactionType;
 import ma.omotal.repository.AuditLogRepository;
+import ma.omotal.repository.BqArticleRepository;
+import ma.omotal.repository.BqRealisationRepository;
 import ma.omotal.repository.CaisseTransactionRepository;
 import ma.omotal.repository.ChantierRepository;
 import ma.omotal.repository.ChantierUserAccessRepository;
@@ -39,8 +43,10 @@ import ma.omotal.repository.EquipmentRepository;
 import ma.omotal.repository.EquipmentTimesheetRepository;
 import ma.omotal.repository.GasoilEntryRepository;
 import ma.omotal.repository.GasoilExitRepository;
+import ma.omotal.repository.MaterialPurchaseRepository;
 import ma.omotal.repository.PersonnelAdvanceRepository;
 import ma.omotal.repository.PersonnelTimesheetRepository;
+import ma.omotal.repository.ProductionRecordRepository;
 import ma.omotal.repository.SupplierRepository;
 import ma.omotal.repository.UserRepository;
 import ma.omotal.repository.ValidationLogRepository;
@@ -89,6 +95,14 @@ class ApiSecurityMockMvcTest {
   @Autowired
   private SupplierRepository suppliers;
   @Autowired
+  private ProductionRecordRepository productions;
+  @Autowired
+  private MaterialPurchaseRepository materialPurchases;
+  @Autowired
+  private BqArticleRepository bqArticles;
+  @Autowired
+  private BqRealisationRepository bqRealisations;
+  @Autowired
   private DocumentRepository documents;
   @Autowired
   private AuditLogRepository auditLogs;
@@ -100,6 +114,10 @@ class ApiSecurityMockMvcTest {
     validationLogs.deleteAll();
     auditLogs.deleteAll();
     documents.deleteAll();
+    bqRealisations.deleteAll();
+    bqArticles.deleteAll();
+    materialPurchases.deleteAll();
+    productions.deleteAll();
     equipmentTimesheets.deleteAll();
     personnelTimesheets.deleteAll();
     advances.deleteAll();
@@ -215,6 +233,92 @@ class ApiSecurityMockMvcTest {
     assertThat(response).startsWith(new byte[]{'P', 'K'});
   }
 
+  @Test
+  void productionCanBeSubmittedByPointeurAndValidatedByResponsable() throws Exception {
+    var ayoub = user("Ayoub", "ayoub@omotal.ma", Role.POINTEUR);
+    var responsable = user("Responsable", "responsable@omotal.ma", Role.RESPONSABLE_CHANTIER);
+    var chantier = chantier("GM-62-2026");
+    grant(ayoub, chantier);
+    grant(responsable, chantier);
+    var tokenAyoub = login("ayoub@omotal.ma");
+    var tokenResponsable = login("responsable@omotal.ma");
+
+    var response = mockMvc.perform(post("/api/v1/production")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "date":"2026-05-20",
+                  "chantierId":"%s",
+                  "voie":"Voie A",
+                  "workType":"Deblai",
+                  "lengthValue":10,
+                  "widthValue":4,
+                  "depthValue":1.5,
+                  "unit":"M3",
+                  "hours":3,
+                  "submit":true
+                }
+                """.formatted(chantier.getId()))
+            .header("Authorization", bearer(tokenAyoub)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.quantity").value(60.0))
+        .andExpect(jsonPath("$.status").value("SOUMIS"))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    var id = objectMapper.readTree(response).get("id").asText();
+    mockMvc.perform(post("/api/v1/validations/PRODUCTION_RECORD/" + id + "/validate")
+            .header("Authorization", bearer(tokenResponsable)))
+        .andExpect(status().isOk());
+
+    assertThat(productions.findById(UUID.fromString(id)).orElseThrow().getStatus()).isEqualTo(OperationStatus.VALIDE);
+  }
+
+  @Test
+  void pointeurCannotReadBqProfitability() throws Exception {
+    var ayoub = user("Ayoub", "ayoub@omotal.ma", Role.POINTEUR);
+    var chantier = chantier("GM-62-2026");
+    grant(ayoub, chantier);
+    var token = login("ayoub@omotal.ma");
+
+    mockMvc.perform(get("/api/v1/bq")
+            .queryParam("chantierId", chantier.getId().toString())
+            .header("Authorization", bearer(token)))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void comptableCreatesMaterialPurchaseWithTotals() throws Exception {
+    var comptable = user("Comptable", "admin@omotal.ma", Role.COMPTABLE);
+    var chantier = chantier("GM-62-2026");
+    grant(comptable, chantier);
+    var supplier = supplier();
+    var token = login("admin@omotal.ma");
+
+    mockMvc.perform(post("/api/v1/matieres")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "date":"2026-05-22",
+                  "chantierId":"%s",
+                  "supplierId":"%s",
+                  "designation":"Grave concassee",
+                  "unit":"T",
+                  "quantity":100,
+                  "unitPriceHt":80,
+                  "transportHt":500,
+                  "vatRate":20,
+                  "submit":true
+                }
+                """.formatted(chantier.getId(), supplier.getId()))
+            .header("Authorization", bearer(token)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalHt").value(8500.0))
+        .andExpect(jsonPath("$.totalTtc").value(10200.0))
+        .andExpect(jsonPath("$.remainingAmount").value(10200.0));
+  }
+
   private String login(String email) throws Exception {
     var response = mockMvc.perform(post("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
@@ -327,5 +431,13 @@ class ApiSecurityMockMvcTest {
     item.setAppliedHourlyRate(new BigDecimal("350"));
     item.setStatus(OperationStatus.SOUMIS);
     return equipmentTimesheets.save(item);
+  }
+
+  private SupplierEntity supplier() {
+    var supplier = new SupplierEntity();
+    supplier.setName("Fournisseur test");
+    supplier.setType(SupplierType.MATIERE);
+    supplier.setActive(true);
+    return suppliers.save(supplier);
   }
 }

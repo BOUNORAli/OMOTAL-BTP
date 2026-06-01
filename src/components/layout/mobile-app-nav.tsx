@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Fuel, HardHat, History, Home, Truck, X } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Fuel, HardHat, History, Home, LogOut, Truck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { roleLabels } from "@/lib/domain/labels";
 import { can, type Permission } from "@/lib/domain/permissions";
@@ -36,7 +36,9 @@ export function getMobileVisibleNavItems(role: Role) {
 
 export function MobileAppNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const currentUser = useAppStore((state) => state.currentUser);
+  const clearSession = useAppStore((state) => state.clearSession);
   const [open, setOpen] = useState(false);
 
   const visibleItems = useMemo(
@@ -132,6 +134,18 @@ export function MobileAppNav() {
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Connecte</p>
           <strong className="mt-1 block text-sm text-slate-950">{currentUser.name}</strong>
           <span className="text-xs text-slate-500">{roleLabels[currentUser.role]}</span>
+          <button
+            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 text-sm font-bold text-red-700"
+            onClick={() => {
+              clearSession();
+              setOpen(false);
+              router.replace("/login");
+            }}
+            type="button"
+          >
+            <LogOut className="size-4" />
+            Se deconnecter
+          </button>
         </div>
       </aside>
     </div>

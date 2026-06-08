@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, FileSpreadsheet, Upload } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileSpreadsheet, ShieldCheck, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -85,6 +85,54 @@ export default function ImportsPage() {
         eyebrow="Transition Excel"
         title="Imports controles"
       />
+
+      <section className="mb-6 grid gap-4 xl:grid-cols-3">
+        <Card className="p-4">
+          <div className="flex items-start gap-3">
+            <span className="rounded-lg bg-blue-50 p-2 text-blue-700">
+              <FileSpreadsheet className="size-5" />
+            </span>
+            <div>
+              <strong className="block text-sm text-slate-950">Situation Genie Meknes</strong>
+              <p className="mt-1 text-sm text-slate-600">Caisse, gasoil officiel, matieres, ETP, transport, personnel et engins.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge tone="blue">Finance / Stock</Badge>
+                <Badge tone="green">Source officielle gasoil</Badge>
+              </div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-start gap-3">
+            <span className="rounded-lg bg-orange-50 p-2 text-orange-700">
+              <FileSpreadsheet className="size-5" />
+            </span>
+            <div>
+              <strong className="block text-sm text-slate-950">Suivi rendements CANA</strong>
+              <p className="mt-1 text-sm text-slate-600">Decapage, reglage, pointage CANA, tranchees et couts alloues.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge tone="orange">Production</Badge>
+                <Badge tone="blue">Rendements</Badge>
+              </div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-start gap-3">
+            <span className="rounded-lg bg-emerald-50 p-2 text-emerald-700">
+              <ShieldCheck className="size-5" />
+            </span>
+            <div>
+              <strong className="block text-sm text-slate-950">Controle avant validation</strong>
+              <p className="mt-1 text-sm text-slate-600">Anomalies Excel, doublons, dates invalides et lignes critiques bloquees.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge tone="green">Trace batch</Badge>
+                <Badge tone="orange">Warnings conserves</Badge>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </section>
 
       <Card className="mb-6 p-5">
         <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr_1fr_auto_auto]">

@@ -9,6 +9,7 @@ import {
   Building2,
   ClipboardCheck,
   FileText,
+  FileSpreadsheet,
   Fuel,
   Hammer,
   HardHat,
@@ -47,6 +48,7 @@ export const appNavItems: AppNavItem[] = [
   { href: "/app/bq", icon: Hammer, label: "BQ & Rentabilite", permission: "rentabilite.read" },
   { href: "/app/validations", icon: ClipboardCheck, label: "Validations", permission: "validations.read" },
   { href: "/app/alertes", icon: AlertTriangle, label: "Alertes", permission: "alertes.read" },
+  { href: "/app/imports", icon: FileSpreadsheet, label: "Imports Excel", permission: "rapports.export" },
   { href: "/app/rapports", icon: FileText, label: "Rapports", permission: "rapports.export" },
   { href: "/app/admin", icon: Settings, label: "Administration", permission: "admin.users.manage" },
 ];

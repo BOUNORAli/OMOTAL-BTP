@@ -1,13 +1,15 @@
 package ma.omotal.api;
 
-import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import ma.omotal.api.dto.CoreDtos;
 import ma.omotal.domain.enums.Role;
 import ma.omotal.security.AccessPolicy;
 import ma.omotal.security.CurrentUserService;
 import ma.omotal.service.AuditService;
-import org.apache.poi.ss.usermodel.DataFormatter;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
+import ma.omotal.service.ControlledImportService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,46 +22,57 @@ public class ImportController {
   private final CurrentUserService currentUser;
   private final AccessPolicy accessPolicy;
   private final AuditService audit;
+  private final ControlledImportService imports;
 
-  public ImportController(CurrentUserService currentUser, AccessPolicy accessPolicy, AuditService audit) {
+  public ImportController(
+      CurrentUserService currentUser,
+      AccessPolicy accessPolicy,
+      AuditService audit,
+      ControlledImportService imports
+  ) {
     this.currentUser = currentUser;
     this.accessPolicy = accessPolicy;
     this.audit = audit;
+    this.imports = imports;
   }
 
   @PostMapping("/preview")
-  public CoreDtos.ImportPreviewDto preview(@RequestParam("file") MultipartFile file) throws Exception {
+  public CoreDtos.ImportWorkbookPreviewDto preview(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam(value = "workbookRole", required = false) String workbookRole
+  ) throws Exception {
     var user = currentUser.currentUser();
     accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.COMPTABLE);
-    var headers = new ArrayList<String>();
-    var rows = new ArrayList<java.util.List<String>>();
-    var errors = new ArrayList<String>();
-    var formatter = new DataFormatter();
+    var preview = imports.preview(file, workbookRole);
+    audit.record(user.getId(), "imports", "preview", "ImportFile", user.getId(), file.getOriginalFilename());
+    return preview;
+  }
 
-    try (var workbook = WorkbookFactory.create(file.getInputStream())) {
-      var sheet = workbook.getSheetAt(0);
-      var headerRow = sheet.getRow(sheet.getFirstRowNum());
-      if (headerRow == null) {
-        errors.add("Le fichier ne contient pas de ligne d'en-tete.");
-      } else {
-        for (var cell : headerRow) {
-          headers.add(formatter.formatCellValue(cell));
-        }
-      }
-      var maxRow = Math.min(sheet.getLastRowNum(), sheet.getFirstRowNum() + 10);
-      for (int i = sheet.getFirstRowNum() + 1; i <= maxRow; i++) {
-        var row = sheet.getRow(i);
-        if (row == null) {
-          continue;
-        }
-        var values = new ArrayList<String>();
-        for (int j = 0; j < headers.size(); j++) {
-          values.add(formatter.formatCellValue(row.getCell(j)));
-        }
-        rows.add(values);
-      }
-      audit.record(user.getId(), "imports", "preview", "ImportFile", user.getId(), file.getOriginalFilename());
-      return new CoreDtos.ImportPreviewDto(file.getOriginalFilename(), sheet.getSheetName(), headers, rows, errors);
-    }
+  @PostMapping("/commit")
+  public CoreDtos.ImportCommitDto commit(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam UUID chantierId,
+      @RequestParam(value = "workbookRole", required = false) String workbookRole
+  ) throws Exception {
+    var user = currentUser.currentUser();
+    accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.COMPTABLE);
+    accessPolicy.requireChantier(user, chantierId);
+    var result = imports.commit(file, chantierId, workbookRole, user.getId());
+    audit.record(user.getId(), "imports", "commit", "ImportBatch", result.batchId(), file.getOriginalFilename());
+    return result;
+  }
+
+  @GetMapping("/{batchId}")
+  public CoreDtos.ImportBatchDto batch(@PathVariable UUID batchId) {
+    var user = currentUser.currentUser();
+    accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.COMPTABLE, Role.DIRECTEUR);
+    return imports.getBatch(batchId);
+  }
+
+  @GetMapping("/{batchId}/issues")
+  public List<CoreDtos.ImportRowDto> issues(@PathVariable UUID batchId) {
+    var user = currentUser.currentUser();
+    accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.COMPTABLE, Role.DIRECTEUR);
+    return imports.getIssues(batchId);
   }
 }

@@ -30,6 +30,7 @@ describe("form schemas", () => {
 
   it("validates production dimensions before calculating quantities", () => {
     const result = productionSchema.safeParse({
+      productionFamily: "DECAPAGE",
       voie: "V1",
       workType: "deblai",
       length: "40",

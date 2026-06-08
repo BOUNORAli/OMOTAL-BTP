@@ -11,6 +11,7 @@ import ma.omotal.service.DashboardService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -45,10 +46,14 @@ public class DashboardController {
   }
 
   @GetMapping("/chantier/{chantierId}")
-  public CoreDtos.DashboardSummaryDto chantier(@PathVariable UUID chantierId) {
+  public CoreDtos.DashboardSummaryDto chantier(
+      @PathVariable UUID chantierId,
+      @RequestParam(required = false) java.time.LocalDate from,
+      @RequestParam(required = false) java.time.LocalDate to
+  ) {
     var user = currentUser.currentUser();
     accessPolicy.requireRole(user, Role.SUPER_ADMIN, Role.DIRECTEUR, Role.COMPTABLE, Role.RESPONSABLE_CHANTIER);
     accessPolicy.requireChantier(user, chantierId);
-    return dashboard.chantier(chantierId);
+    return dashboard.chantier(chantierId, from, to);
   }
 }

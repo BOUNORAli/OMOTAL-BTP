@@ -6,6 +6,8 @@ import java.math.RoundingMode;
 import ma.omotal.api.dto.CoreDtos;
 import ma.omotal.domain.BqArticleEntity;
 import ma.omotal.domain.BqRealisationEntity;
+import ma.omotal.domain.ChantierReferenceValueEntity;
+import ma.omotal.domain.ChantierSettingsEntity;
 import ma.omotal.domain.CaisseTransactionEntity;
 import ma.omotal.domain.ChantierEntity;
 import ma.omotal.domain.DocumentEntity;
@@ -16,6 +18,8 @@ import ma.omotal.domain.EtpImputationEntity;
 import ma.omotal.domain.EtpPrestationEntity;
 import ma.omotal.domain.GasoilEntryEntity;
 import ma.omotal.domain.GasoilExitEntity;
+import ma.omotal.domain.ImportBatchEntity;
+import ma.omotal.domain.ImportRowEntity;
 import ma.omotal.domain.MaintenanceRecordEntity;
 import ma.omotal.domain.MaterialPurchaseEntity;
 import ma.omotal.domain.PersonnelAdvanceEntity;
@@ -174,6 +178,7 @@ public final class Mapper {
         item.getId(),
         item.getDate(),
         item.getChantierId(),
+        item.getProductionFamily(),
         item.getVoie(),
         item.getTranche(),
         item.getTroncon(),
@@ -183,11 +188,80 @@ public final class Mapper {
         item.getLengthValue(),
         item.getWidthValue(),
         item.getDepthValue(),
+        item.getDiameter(),
+        item.getPipeType(),
+        item.getSoilType(),
+        item.getPoseType(),
         item.getQuantity(),
         item.getUnit(),
         item.getHours(),
         ratio(item.getQuantity(), item.getHours()),
+        nvl(item.getAllocatedGasoilLiters()),
+        nvl(item.getAllocatedGasoilAmount()),
+        nvl(item.getAllocatedEquipmentCost()),
+        nvl(item.getAllocatedWorkerCost()),
+        nvl(item.getAllocatedDriverExpenses()),
+        nvl(item.getAllocatedOtherCost()),
+        nvl(item.getOverheadAmount()),
+        nvl(item.getTotalAllocatedCost()),
+        ratio(item.getTotalAllocatedCost(), item.getQuantity()),
         item.getStatus()
+    );
+  }
+
+  public static CoreDtos.ChantierSettingsDto chantierSettings(ChantierSettingsEntity item) {
+    return new CoreDtos.ChantierSettingsDto(
+        item.getId(),
+        item.getChantierId(),
+        item.getStandardHoursPerDay(),
+        item.getOverheadRate(),
+        item.getDefaultVatRate(),
+        item.getGasoilPriceStrategy(),
+        item.getCurrency()
+    );
+  }
+
+  public static CoreDtos.ReferenceValueDto referenceValue(ChantierReferenceValueEntity item) {
+    return new CoreDtos.ReferenceValueDto(
+        item.getId(),
+        item.getChantierId(),
+        item.getCategory(),
+        item.getValue(),
+        item.getNormalizedValue(),
+        item.getAliasOfValue(),
+        item.isActive(),
+        item.getSortOrder()
+    );
+  }
+
+  public static CoreDtos.ImportBatchDto importBatch(ImportBatchEntity item) {
+    return new CoreDtos.ImportBatchDto(
+        item.getId(),
+        item.getChantierId(),
+        item.getFileName(),
+        item.getWorkbookRole(),
+        item.getStatus(),
+        item.getTotalSheets(),
+        item.getTotalRows(),
+        item.getValidRows(),
+        item.getWarningRows(),
+        item.getBlockedRows()
+    );
+  }
+
+  public static CoreDtos.ImportRowDto importRow(ImportRowEntity item) {
+    return new CoreDtos.ImportRowDto(
+        item.getId(),
+        item.getBatchId(),
+        item.getSheetName(),
+        item.getModule(),
+        item.getSourceRowNumber(),
+        item.getRowStatus(),
+        item.getSeverity(),
+        item.getErrors(),
+        item.getDetectedKey(),
+        item.getImportedTargetType(),
+        item.getImportedTargetId()
     );
   }
 

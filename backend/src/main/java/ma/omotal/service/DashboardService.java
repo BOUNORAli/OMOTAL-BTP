@@ -1,6 +1,7 @@
 package ma.omotal.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +32,7 @@ public class DashboardService {
   private final PersonnelAdvanceRepository personnelAdvances;
   private final EquipmentRepository equipment;
   private final EquipmentTimesheetRepository equipmentTimesheets;
+  private final ProductionAnalyticsService productionAnalytics;
   private final AppProperties properties;
 
   public DashboardService(
@@ -41,6 +43,7 @@ public class DashboardService {
       PersonnelAdvanceRepository personnelAdvances,
       EquipmentRepository equipment,
       EquipmentTimesheetRepository equipmentTimesheets,
+      ProductionAnalyticsService productionAnalytics,
       AppProperties properties
   ) {
     this.transactions = transactions;
@@ -50,10 +53,15 @@ public class DashboardService {
     this.personnelAdvances = personnelAdvances;
     this.equipment = equipment;
     this.equipmentTimesheets = equipmentTimesheets;
+    this.productionAnalytics = productionAnalytics;
     this.properties = properties;
   }
 
   public CoreDtos.DashboardSummaryDto chantier(UUID chantierId) {
+    return chantier(chantierId, null, null);
+  }
+
+  public CoreDtos.DashboardSummaryDto chantier(UUID chantierId, LocalDate from, LocalDate to) {
     var chantierTransactions = transactions.findByChantierId(chantierId);
     var entries = gasoilEntries.findByChantierId(chantierId);
     var exits = gasoilExits.findByChantierId(chantierId);
@@ -64,6 +72,7 @@ public class DashboardService {
 
     var cash = CalculationService.calculateCashSummary(chantierTransactions);
     var gasoil = CalculationService.calculateGasoilStock(entries, exits);
+    var production = productionAnalytics.analytics(chantierId, from, to, null);
     var alerts = buildAlerts(chantierId, gasoil.stockLiters(), exits, equipmentItems, equipmentSheets, chantierTransactions);
     var pending = (int) exits.stream().filter(item -> item.getStatus() == OperationStatus.SOUMIS).count()
         + (int) equipmentSheets.stream().filter(item -> item.getStatus() == OperationStatus.SOUMIS).count()
@@ -79,6 +88,11 @@ public class DashboardService {
         CalculationService.calculatePersonnelDue(personTimesheets),
         CalculationService.calculatePersonnelAdvances(advances),
         CalculationService.calculateEquipmentCost(equipmentSheets),
+        production.totalQuantity(),
+        production.totalHours(),
+        production.totalCost(),
+        production.rendementPerHour(),
+        production.costPerUnit(),
         pending,
         alerts
     );

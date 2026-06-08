@@ -12,12 +12,16 @@ import type {
   EtpOverview,
   GasoilEntry,
   GasoilExit,
-  ImportPreview,
+  ImportCommitResult,
+  ImportWorkbookPreview,
   MaintenanceRecord,
   MaterialPurchase,
   PersonnelAdvance,
   PersonnelTimesheet,
   Production,
+  ProductionAnalytics,
+  ProductionFamily,
+  ReferenceValue,
   SupplierPayment,
   Supplier,
   TransportRecord,
@@ -199,6 +203,11 @@ type BackendDashboardSummary = {
   personnelDue: number;
   personnelAdvances: number;
   equipmentCost: number;
+  productionQuantity: number;
+  productionHours: number;
+  productionCost: number;
+  productionRendement: number;
+  productionCostPerUnit: number;
   pendingValidations: number;
   alerts: BackendAlert[];
 };
@@ -207,6 +216,7 @@ type BackendProduction = {
   id: string;
   date: string;
   chantierId: string;
+  productionFamily?: string;
   voie: string;
   tranche?: string;
   troncon?: string;
@@ -216,12 +226,27 @@ type BackendProduction = {
   lengthValue?: number;
   widthValue?: number;
   depthValue?: number;
+  diameter?: string;
+  pipeType?: string;
+  soilType?: string;
+  poseType?: string;
   quantity: number;
   unit: string;
   hours?: number;
   rendement?: number;
+  allocatedGasoilLiters?: number;
+  allocatedGasoilAmount?: number;
+  allocatedEquipmentCost?: number;
+  allocatedWorkerCost?: number;
+  allocatedDriverExpenses?: number;
+  allocatedOtherCost?: number;
+  overheadAmount?: number;
+  totalAllocatedCost?: number;
+  costPerUnit?: number;
   status: string;
 };
+
+type BackendReferenceValue = ReferenceValue;
 
 type BackendMaterialPurchase = Omit<MaterialPurchase, "status"> & { status: string };
 type BackendSupplierPayment = Omit<SupplierPayment, "paymentMode" | "status"> & { paymentMode: string; status: string };
@@ -423,6 +448,7 @@ function productionFromBackend(item: BackendProduction): Production {
     id: item.id,
     date: item.date,
     chantierId: item.chantierId,
+    productionFamily: item.productionFamily as ProductionFamily,
     voie: item.voie,
     tranche: item.tranche,
     troncon: item.troncon,
@@ -432,10 +458,23 @@ function productionFromBackend(item: BackendProduction): Production {
     length: item.lengthValue,
     width: item.widthValue,
     depth: item.depthValue,
+    diameter: item.diameter,
+    pipeType: item.pipeType,
+    soilType: item.soilType,
+    poseType: item.poseType,
     quantity: item.quantity,
     unit: item.unit.toLowerCase() as Production["unit"],
     hours: item.hours,
     rendement: item.rendement,
+    allocatedGasoilLiters: item.allocatedGasoilLiters,
+    allocatedGasoilAmount: item.allocatedGasoilAmount,
+    allocatedEquipmentCost: item.allocatedEquipmentCost,
+    allocatedWorkerCost: item.allocatedWorkerCost,
+    allocatedDriverExpenses: item.allocatedDriverExpenses,
+    allocatedOtherCost: item.allocatedOtherCost,
+    overheadAmount: item.overheadAmount,
+    totalAllocatedCost: item.totalAllocatedCost,
+    costPerUnit: item.costPerUnit,
     status: status(item.status),
     syncStatus: "synced",
   };
@@ -570,6 +609,11 @@ export const backendApi = {
         personnelDue: data.personnelDue,
         personnelAdvances: data.personnelAdvances,
         equipmentCost: data.equipmentCost,
+        productionQuantity: data.productionQuantity,
+        productionHours: data.productionHours,
+        productionCost: data.productionCost,
+        productionRendement: data.productionRendement,
+        productionCostPerUnit: data.productionCostPerUnit,
         pendingValidations: data.pendingValidations,
         alerts: data.alerts.map((alert) => ({
           id: alert.id,
@@ -716,6 +760,7 @@ export const backendApi = {
         body: JSON.stringify({
           date: new Date().toISOString().slice(0, 10),
           chantierId,
+          productionFamily: input.productionFamily,
           voie: input.voie,
           tranche: input.tranche,
           troncon: input.troncon,
@@ -725,12 +770,32 @@ export const backendApi = {
           lengthValue: input.length,
           widthValue: input.width,
           depthValue: input.depth,
+          diameter: input.diameter,
+          pipeType: input.pipeType,
+          soilType: input.soilType,
+          poseType: input.poseType,
           quantity: input.quantity,
           unit: upper(input.unit),
           hours: input.hours,
+          allocatedGasoilLiters: input.allocatedGasoilLiters,
+          allocatedGasoilAmount: input.allocatedGasoilAmount,
+          allocatedEquipmentCost: input.allocatedEquipmentCost,
+          allocatedWorkerCost: input.allocatedWorkerCost,
+          allocatedDriverExpenses: input.allocatedDriverExpenses,
+          allocatedOtherCost: input.allocatedOtherCost,
+          overheadAmount: input.overheadAmount,
+          totalAllocatedCost: input.totalAllocatedCost,
           submit: true,
         }),
       }));
+    },
+    async analytics(input?: { chantierId?: string; from?: string; to?: string; family?: ProductionFamily }): Promise<ProductionAnalytics> {
+      const chantierId = input?.chantierId ?? getPersistedSelectedChantierId() ?? activeChantier.id;
+      const params = new URLSearchParams({ chantierId });
+      if (input?.from) params.set("from", input.from);
+      if (input?.to) params.set("to", input.to);
+      if (input?.family) params.set("family", input.family);
+      return apiFetch<ProductionAnalytics>(`/api/v1/production/analytics?${params.toString()}`);
     },
   },
   matieresService: {
@@ -780,12 +845,36 @@ export const backendApi = {
     },
   },
   importService: {
-    async preview(file: File): Promise<ImportPreview> {
+    async preview(file: File, workbookRole?: string): Promise<ImportWorkbookPreview> {
       const formData = new FormData();
       formData.set("file", file);
-      return apiFetch<ImportPreview>("/api/v1/imports/preview", {
+      if (workbookRole) formData.set("workbookRole", workbookRole);
+      return apiFetch<ImportWorkbookPreview>("/api/v1/imports/preview", {
         method: "POST",
         body: formData,
+      });
+    },
+    async commit(input: { file: File; chantierId: string; workbookRole?: string }): Promise<ImportCommitResult> {
+      const formData = new FormData();
+      formData.set("file", input.file);
+      formData.set("chantierId", input.chantierId);
+      if (input.workbookRole) formData.set("workbookRole", input.workbookRole);
+      return apiFetch<ImportCommitResult>("/api/v1/imports/commit", {
+        method: "POST",
+        body: formData,
+      });
+    },
+  },
+  referentielService: {
+    async list(chantierId: string, category?: string): Promise<ReferenceValue[]> {
+      const params = new URLSearchParams({ chantierId });
+      if (category) params.set("category", category);
+      return apiFetch<BackendReferenceValue[]>(`/api/v1/referentiels?${params.toString()}`);
+    },
+    async create(input: Pick<ReferenceValue, "chantierId" | "category" | "value" | "aliasOfValue" | "sortOrder">) {
+      return apiFetch<BackendReferenceValue>("/api/v1/referentiels", {
+        method: "POST",
+        body: JSON.stringify(input),
       });
     },
   },

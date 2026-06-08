@@ -12,6 +12,7 @@ import {
   fournisseurService,
   gasoilService,
   importService,
+  referentielService,
   matieresService,
   personnelService,
   productionService,
@@ -46,5 +47,6 @@ export const dataSource = isBackendEnabled()
       documentService,
       fournisseurService,
       exportService,
+      referentielService,
       authService,
     };

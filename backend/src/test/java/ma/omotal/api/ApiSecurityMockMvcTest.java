@@ -35,14 +35,19 @@ import ma.omotal.repository.AuditLogRepository;
 import ma.omotal.repository.BqArticleRepository;
 import ma.omotal.repository.BqRealisationRepository;
 import ma.omotal.repository.CaisseTransactionRepository;
+import ma.omotal.repository.ChantierReferenceValueRepository;
 import ma.omotal.repository.ChantierRepository;
+import ma.omotal.repository.ChantierSettingsRepository;
 import ma.omotal.repository.ChantierUserAccessRepository;
 import ma.omotal.repository.DocumentRepository;
+import ma.omotal.repository.DriverExpenseRepository;
 import ma.omotal.repository.EmployeeRepository;
 import ma.omotal.repository.EquipmentRepository;
 import ma.omotal.repository.EquipmentTimesheetRepository;
 import ma.omotal.repository.GasoilEntryRepository;
 import ma.omotal.repository.GasoilExitRepository;
+import ma.omotal.repository.ImportBatchRepository;
+import ma.omotal.repository.ImportRowRepository;
 import ma.omotal.repository.MaterialPurchaseRepository;
 import ma.omotal.repository.PersonnelAdvanceRepository;
 import ma.omotal.repository.PersonnelTimesheetRepository;
@@ -101,6 +106,16 @@ class ApiSecurityMockMvcTest {
   @Autowired
   private BqArticleRepository bqArticles;
   @Autowired
+  private ChantierReferenceValueRepository referenceValues;
+  @Autowired
+  private ChantierSettingsRepository chantierSettings;
+  @Autowired
+  private DriverExpenseRepository driverExpenses;
+  @Autowired
+  private ImportBatchRepository importBatches;
+  @Autowired
+  private ImportRowRepository importRows;
+  @Autowired
   private BqRealisationRepository bqRealisations;
   @Autowired
   private DocumentRepository documents;
@@ -117,6 +132,11 @@ class ApiSecurityMockMvcTest {
     bqRealisations.deleteAll();
     bqArticles.deleteAll();
     materialPurchases.deleteAll();
+    importRows.deleteAll();
+    importBatches.deleteAll();
+    driverExpenses.deleteAll();
+    referenceValues.deleteAll();
+    chantierSettings.deleteAll();
     productions.deleteAll();
     equipmentTimesheets.deleteAll();
     personnelTimesheets.deleteAll();

@@ -23,6 +23,7 @@ export type OperationStatus =
   | "verrouille";
 
 export type SyncStatus = "local" | "syncing" | "synced" | "error" | "conflict";
+export type ProductionFamily = "DECAPAGE" | "REGLAGE" | "CANA_TRANCHEE" | "CANA_POSE";
 
 export type PaymentMode =
   | "especes_omotal"
@@ -210,6 +211,7 @@ export interface Production {
   id: string;
   chantierId: string;
   date: string;
+  productionFamily?: ProductionFamily;
   voie: string;
   tranche?: string;
   troncon?: string;
@@ -219,11 +221,24 @@ export interface Production {
   length?: number;
   width?: number;
   depth?: number;
+  diameter?: string;
+  pipeType?: string;
+  soilType?: string;
+  poseType?: string;
   quantity: number;
   unit: "m3" | "m2" | "ml" | "u" | "t";
   hours?: number;
   status: OperationStatus;
   rendement?: number;
+  allocatedGasoilLiters?: number;
+  allocatedGasoilAmount?: number;
+  allocatedEquipmentCost?: number;
+  allocatedWorkerCost?: number;
+  allocatedDriverExpenses?: number;
+  allocatedOtherCost?: number;
+  overheadAmount?: number;
+  totalAllocatedCost?: number;
+  costPerUnit?: number;
   syncStatus?: SyncStatus;
 }
 
@@ -367,6 +382,96 @@ export interface ImportPreview {
   errors: string[];
 }
 
+export interface ImportWorkbookPreview {
+  fileName: string;
+  workbookRole: string;
+  sheetCount: number;
+  totalRows: number;
+  validRows: number;
+  warningRows: number;
+  blockedRows: number;
+  sheets: ImportSheetPreview[];
+  errors: string[];
+}
+
+export interface ImportSheetPreview {
+  sheetName: string;
+  module: string;
+  headerRow: number;
+  headers: string[];
+  dataRows: number;
+  validRows: number;
+  warningRows: number;
+  blockedRows: number;
+  issues: ImportIssue[];
+  metrics: ImportMetric[];
+  sampleRows: string[][];
+}
+
+export interface ImportIssue {
+  sheetName: string;
+  rowNumber: number;
+  severity: "OK" | "WARNING" | "CRITICAL" | string;
+  message: string;
+}
+
+export interface ImportMetric {
+  label: string;
+  value: number;
+  unit: string;
+}
+
+export interface ImportCommitResult {
+  batchId: string;
+  chantierId: string;
+  fileName: string;
+  workbookRole: string;
+  status: string;
+  totalRows: number;
+  validRows: number;
+  warningRows: number;
+  blockedRows: number;
+  importedRows: number;
+}
+
+export interface ReferenceValue {
+  id: string;
+  chantierId: string;
+  category: string;
+  value: string;
+  normalizedValue: string;
+  aliasOfValue?: string;
+  active: boolean;
+  sortOrder: number;
+}
+
+export interface ProductionBreakdown {
+  key: string;
+  quantity: number;
+  hours: number;
+  gasoilLiters: number;
+  totalCost: number;
+  rendementPerHour: number;
+  costPerUnit: number;
+}
+
+export interface ProductionAnalytics {
+  chantierId: string;
+  from: string;
+  to: string;
+  family?: ProductionFamily;
+  totalQuantity: number;
+  totalHours: number;
+  totalGasoilLiters: number;
+  totalCost: number;
+  rendementPerHour: number;
+  costPerUnit: number;
+  byFamily: ProductionBreakdown[];
+  byVoie: ProductionBreakdown[];
+  byEquipment: ProductionBreakdown[];
+  byDriver: ProductionBreakdown[];
+}
+
 export interface DashboardSummary {
   cashBalance: number;
   cashDebit: number;
@@ -377,6 +482,11 @@ export interface DashboardSummary {
   personnelDue: number;
   personnelAdvances: number;
   equipmentCost: number;
+  productionQuantity: number;
+  productionHours: number;
+  productionCost: number;
+  productionRendement: number;
+  productionCostPerUnit: number;
   pendingValidations: number;
   alerts: Alert[];
 }

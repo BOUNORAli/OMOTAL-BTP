@@ -25,11 +25,14 @@ import type {
   EtpOverview,
   GasoilEntry,
   GasoilExit,
-  ImportPreview,
+  ImportCommitResult,
+  ImportWorkbookPreview,
   MaintenanceRecord,
   MaterialPurchase,
   PersonnelTimesheet,
   Production,
+  ProductionAnalytics,
+  ReferenceValue,
   Supplier,
   SupplierPayment,
   TransportRecord,
@@ -117,6 +120,7 @@ export const dashboardService = {
       personnelAdvances: personnelAdvances.filter((item) => item.chantierId === chantierId),
       equipment: equipment.filter((item) => item.chantierId === chantierId),
       equipmentTimesheets: equipmentTimesheets.filter((item) => item.chantierId === chantierId),
+      productions: productions.filter((item) => item.chantierId === chantierId),
       highPaymentThreshold: 30000,
     });
   },
@@ -253,6 +257,29 @@ export const productionService = {
       ...input,
     };
   },
+
+  async analytics(): Promise<ProductionAnalytics> {
+    await wait();
+    const official = productions.filter((item) => item.status === "valide" || item.status === "verrouille");
+    const totalQuantity = official.reduce((sum, item) => sum + item.quantity, 0);
+    const totalHours = official.reduce((sum, item) => sum + (item.hours ?? 0), 0);
+    const totalCost = official.reduce((sum, item) => sum + (item.totalAllocatedCost ?? 0), 0);
+    return {
+      chantierId: activeChantier.id,
+      from: "1900-01-01",
+      to: "9999-12-31",
+      totalQuantity,
+      totalHours,
+      totalGasoilLiters: official.reduce((sum, item) => sum + (item.allocatedGasoilLiters ?? 0), 0),
+      totalCost,
+      rendementPerHour: totalHours > 0 ? totalQuantity / totalHours : 0,
+      costPerUnit: totalQuantity > 0 ? totalCost / totalQuantity : 0,
+      byFamily: [],
+      byVoie: [],
+      byEquipment: [],
+      byDriver: [],
+    };
+  },
 };
 
 export const fournisseurService = {
@@ -359,9 +386,92 @@ export const bqService = {
 };
 
 export const importService = {
-  async preview(file: File): Promise<ImportPreview> {
+  async preview(file: File): Promise<ImportWorkbookPreview> {
     await wait(260);
-    return { fileName: file.name, sheetName: "Feuil1", headers: [], sampleRows: [], errors: [] };
+    return {
+      fileName: file.name,
+      workbookRole: "AUTO",
+      sheetCount: 2,
+      totalRows: 254,
+      validRows: 246,
+      warningRows: 6,
+      blockedRows: 2,
+      sheets: [
+        {
+          sheetName: "GASOIL ENTRE",
+          module: "GASOIL_ENTRY",
+          headerRow: 4,
+          headers: ["DATE", "FOURNISSEUR", "ENTTRE/L", "PRIX U"],
+          dataRows: 45,
+          validRows: 45,
+          warningRows: 0,
+          blockedRows: 0,
+          metrics: [{ label: "Gasoil entree", value: 14240.34, unit: "L" }],
+          issues: [],
+          sampleRows: [],
+        },
+        {
+          sheetName: "Saisie decapage",
+          module: "PRODUCTION_DECAPAGE",
+          headerRow: 3,
+          headers: ["Date", "Voie", "Engin", "Volume (m3)"],
+          dataRows: 187,
+          validRows: 184,
+          warningRows: 3,
+          blockedRows: 0,
+          metrics: [{ label: "Decapage volume", value: 42565.64, unit: "m3" }],
+          issues: [{ sheetName: "Saisie decapage", rowNumber: 12, severity: "WARNING", message: "Quantite production absente ou nulle." }],
+          sampleRows: [],
+        },
+      ],
+      errors: [],
+    };
+  },
+
+  async commit(input: { file: File; chantierId: string; workbookRole?: string }): Promise<ImportCommitResult> {
+    await wait(420);
+    return {
+      batchId: `import-${Date.now()}`,
+      chantierId: input.chantierId,
+      fileName: input.file.name,
+      workbookRole: input.workbookRole ?? "AUTO",
+      status: "COMMITTED_WITH_ISSUES",
+      totalRows: 254,
+      validRows: 246,
+      warningRows: 6,
+      blockedRows: 2,
+      importedRows: 246,
+    };
+  },
+};
+
+export const referentielService = {
+  async list(chantierId: string): Promise<ReferenceValue[]> {
+    await wait();
+    return [
+      "VOIE1",
+      "VOIE2",
+      "VOIE3",
+      "VOIE20",
+    ].map((value, index) => ({
+      id: `reference-${value}`,
+      chantierId,
+      category: "VOIE",
+      value,
+      normalizedValue: value,
+      active: true,
+      sortOrder: index,
+    }));
+  },
+
+  async create(input: Pick<ReferenceValue, "chantierId" | "category" | "value" | "aliasOfValue" | "sortOrder">) {
+    await wait(180);
+    return {
+      id: `reference-${Date.now()}`,
+      normalizedValue: input.value.trim().toUpperCase(),
+      active: true,
+      ...input,
+    };
   },
 };
 

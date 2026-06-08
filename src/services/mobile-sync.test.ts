@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { listLocalOperations, markLocalOperation, queueLocalOperation, removeLocalOperation } from "./mobile-sync";
+import {
+  listLocalOperations,
+  markLocalOperation,
+  queueLocalOperation,
+  removeLocalOperation,
+  syncLocalOperations,
+} from "./mobile-sync";
 
 function installLocalStorage() {
   const values = new Map<string, string>();
@@ -30,5 +36,29 @@ describe("mobile sync queue", () => {
 
     removeLocalOperation(operation.id);
     expect(listLocalOperations()).toEqual([]);
+  });
+
+  it("syncs local operations and removes successful drafts", async () => {
+    queueLocalOperation("production", { voie: "A" });
+
+    const results = await syncLocalOperations({
+      production: async () => ({ ok: true }),
+    });
+
+    expect(results[0].status).toBe("synced");
+    expect(listLocalOperations()).toEqual([]);
+  });
+
+  it("keeps failed operations with an error status", async () => {
+    const operation = queueLocalOperation("gasoil_exit", { liters: 100 });
+
+    const results = await syncLocalOperations({
+      gasoil_exit: async () => {
+        throw new Error("Reseau indisponible");
+      },
+    });
+
+    expect(results[0]).toMatchObject({ id: operation.id, status: "error", error: "Reseau indisponible" });
+    expect(listLocalOperations()[0]).toMatchObject({ id: operation.id, status: "error", error: "Reseau indisponible" });
   });
 });

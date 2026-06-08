@@ -20,6 +20,8 @@ import type {
   OperationStatus,
   PersonnelTimesheet,
   Production,
+  ProductionAnalytics,
+  ProductionFamily,
   BqOverview,
   SupplierPayment,
   Supplier,
@@ -224,6 +226,33 @@ export function useCreateProduction() {
       void queryClient.invalidateQueries({ queryKey: ["productions"] });
       void queryClient.invalidateQueries({ queryKey: ["validations"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useProductionAnalytics(input?: { chantierId?: string; from?: string; to?: string; family?: ProductionFamily }) {
+  return useQuery<ProductionAnalytics>({
+    queryKey: ["productions", "analytics", input?.chantierId, input?.from, input?.to, input?.family],
+    queryFn: () => dataSource.productionService.analytics(input),
+  });
+}
+
+export function useImportPreview() {
+  return useMutation({
+    mutationFn: ({ file, workbookRole }: { file: File; workbookRole?: string }) =>
+      dataSource.importService.preview(file, workbookRole),
+  });
+}
+
+export function useCommitImport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { file: File; chantierId: string; workbookRole?: string }) => dataSource.importService.commit(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["productions"] });
+      void queryClient.invalidateQueries({ queryKey: ["gasoil"] });
+      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }

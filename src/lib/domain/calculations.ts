@@ -9,6 +9,7 @@ import type {
   OperationStatus,
   PersonnelAdvance,
   PersonnelTimesheet,
+  Production,
 } from "./types";
 
 const officialStatuses: OperationStatus[] = ["valide", "verrouille"];
@@ -185,6 +186,7 @@ export function buildDashboardSummary(input: {
   personnelAdvances: PersonnelAdvance[];
   equipment: Equipment[];
   equipmentTimesheets: EquipmentTimesheet[];
+  productions?: Production[];
   highPaymentThreshold: number;
 }): DashboardSummary {
   const cash = calculateCashSummary(input.transactions);
@@ -192,6 +194,10 @@ export function buildDashboardSummary(input: {
   const personnelDue = calculatePersonnelDue(input.personnelTimesheets);
   const personnelAdvances = calculatePersonnelAdvances(input.personnelAdvances);
   const equipmentCost = calculateEquipmentCost(input.equipmentTimesheets);
+  const officialProductions = (input.productions ?? []).filter((production) => isOfficial(production.status));
+  const productionQuantity = officialProductions.reduce((total, production) => total + production.quantity, 0);
+  const productionHours = officialProductions.reduce((total, production) => total + (production.hours ?? 0), 0);
+  const productionCost = officialProductions.reduce((total, production) => total + (production.totalAllocatedCost ?? 0), 0);
 
   const pendingValidations = [
     ...input.gasoilExits,
@@ -219,6 +225,11 @@ export function buildDashboardSummary(input: {
     personnelDue,
     personnelAdvances,
     equipmentCost,
+    productionQuantity,
+    productionHours,
+    productionCost,
+    productionRendement: productionHours > 0 ? productionQuantity / productionHours : 0,
+    productionCostPerUnit: productionQuantity > 0 ? productionCost / productionQuantity : 0,
     pendingValidations,
     alerts,
   };

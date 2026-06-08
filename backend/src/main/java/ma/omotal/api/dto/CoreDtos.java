@@ -13,6 +13,7 @@ import ma.omotal.domain.enums.DayType;
 import ma.omotal.domain.enums.EquipmentStatus;
 import ma.omotal.domain.enums.OperationStatus;
 import ma.omotal.domain.enums.PaymentMode;
+import ma.omotal.domain.enums.ProductionFamily;
 import ma.omotal.domain.enums.RemunerationType;
 import ma.omotal.domain.enums.SupplierType;
 import ma.omotal.domain.enums.TransactionCategory;
@@ -233,6 +234,7 @@ public final class CoreDtos {
       UUID id,
       LocalDate date,
       UUID chantierId,
+      ProductionFamily productionFamily,
       String voie,
       String tranche,
       String troncon,
@@ -242,10 +244,23 @@ public final class CoreDtos {
       BigDecimal lengthValue,
       BigDecimal widthValue,
       BigDecimal depthValue,
+      String diameter,
+      String pipeType,
+      String soilType,
+      String poseType,
       BigDecimal quantity,
       String unit,
       BigDecimal hours,
       BigDecimal rendement,
+      BigDecimal allocatedGasoilLiters,
+      BigDecimal allocatedGasoilAmount,
+      BigDecimal allocatedEquipmentCost,
+      BigDecimal allocatedWorkerCost,
+      BigDecimal allocatedDriverExpenses,
+      BigDecimal allocatedOtherCost,
+      BigDecimal overheadAmount,
+      BigDecimal totalAllocatedCost,
+      BigDecimal costPerUnit,
       OperationStatus status
   ) {
   }
@@ -253,6 +268,7 @@ public final class CoreDtos {
   public record CreateProductionRecordRequest(
       @NotNull LocalDate date,
       @NotNull UUID chantierId,
+      ProductionFamily productionFamily,
       @NotBlank String voie,
       String tranche,
       String troncon,
@@ -265,7 +281,80 @@ public final class CoreDtos {
       BigDecimal quantity,
       @NotBlank String unit,
       BigDecimal hours,
+      String diameter,
+      String pipeType,
+      String soilType,
+      String poseType,
+      BigDecimal allocatedGasoilLiters,
+      BigDecimal allocatedGasoilAmount,
+      BigDecimal allocatedEquipmentCost,
+      BigDecimal allocatedWorkerCost,
+      BigDecimal allocatedDriverExpenses,
+      BigDecimal allocatedOtherCost,
+      BigDecimal overheadAmount,
+      BigDecimal totalAllocatedCost,
       boolean submit
+  ) {
+  }
+
+  public record ProductionAnalyticsDto(
+      UUID chantierId,
+      LocalDate from,
+      LocalDate to,
+      ProductionFamily family,
+      BigDecimal totalQuantity,
+      BigDecimal totalHours,
+      BigDecimal totalGasoilLiters,
+      BigDecimal totalCost,
+      BigDecimal rendementPerHour,
+      BigDecimal costPerUnit,
+      List<ProductionBreakdownDto> byFamily,
+      List<ProductionBreakdownDto> byVoie,
+      List<ProductionBreakdownDto> byEquipment,
+      List<ProductionBreakdownDto> byDriver
+  ) {
+  }
+
+  public record ProductionBreakdownDto(
+      String key,
+      BigDecimal quantity,
+      BigDecimal hours,
+      BigDecimal gasoilLiters,
+      BigDecimal totalCost,
+      BigDecimal rendementPerHour,
+      BigDecimal costPerUnit
+  ) {
+  }
+
+  public record ChantierSettingsDto(
+      UUID id,
+      UUID chantierId,
+      BigDecimal standardHoursPerDay,
+      BigDecimal overheadRate,
+      BigDecimal defaultVatRate,
+      String gasoilPriceStrategy,
+      String currency
+  ) {
+  }
+
+  public record ReferenceValueDto(
+      UUID id,
+      UUID chantierId,
+      String category,
+      String value,
+      String normalizedValue,
+      String aliasOfValue,
+      boolean active,
+      int sortOrder
+  ) {
+  }
+
+  public record CreateReferenceValueRequest(
+      @NotNull UUID chantierId,
+      @NotBlank String category,
+      @NotBlank String value,
+      String aliasOfValue,
+      Integer sortOrder
   ) {
   }
 
@@ -522,6 +611,88 @@ public final class CoreDtos {
   ) {
   }
 
+  public record ImportWorkbookPreviewDto(
+      String fileName,
+      String workbookRole,
+      int sheetCount,
+      int totalRows,
+      int validRows,
+      int warningRows,
+      int blockedRows,
+      List<ImportSheetPreviewDto> sheets,
+      List<String> errors
+  ) {
+  }
+
+  public record ImportSheetPreviewDto(
+      String sheetName,
+      String module,
+      int headerRow,
+      List<String> headers,
+      int dataRows,
+      int validRows,
+      int warningRows,
+      int blockedRows,
+      List<ImportIssueDto> issues,
+      List<ImportMetricDto> metrics,
+      List<List<String>> sampleRows
+  ) {
+  }
+
+  public record ImportMetricDto(String label, BigDecimal value, String unit) {
+  }
+
+  public record ImportIssueDto(
+      String sheetName,
+      int rowNumber,
+      String severity,
+      String message
+  ) {
+  }
+
+  public record ImportCommitDto(
+      UUID batchId,
+      UUID chantierId,
+      String fileName,
+      String workbookRole,
+      String status,
+      int totalRows,
+      int validRows,
+      int warningRows,
+      int blockedRows,
+      int importedRows
+  ) {
+  }
+
+  public record ImportBatchDto(
+      UUID id,
+      UUID chantierId,
+      String fileName,
+      String workbookRole,
+      String status,
+      int totalSheets,
+      int totalRows,
+      int validRows,
+      int warningRows,
+      int blockedRows
+  ) {
+  }
+
+  public record ImportRowDto(
+      UUID id,
+      UUID batchId,
+      String sheetName,
+      String module,
+      int sourceRowNumber,
+      String rowStatus,
+      String severity,
+      String errors,
+      String detectedKey,
+      String importedTargetType,
+      UUID importedTargetId
+  ) {
+  }
+
   public record EquipmentTimesheetDto(
       UUID id,
       LocalDate date,
@@ -571,6 +742,11 @@ public final class CoreDtos {
       BigDecimal personnelDue,
       BigDecimal personnelAdvances,
       BigDecimal equipmentCost,
+      BigDecimal productionQuantity,
+      BigDecimal productionHours,
+      BigDecimal productionCost,
+      BigDecimal productionRendement,
+      BigDecimal productionCostPerUnit,
       int pendingValidations,
       List<AlertDto> alerts
   ) {

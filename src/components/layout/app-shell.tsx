@@ -11,13 +11,14 @@ import { Topbar } from "./topbar";
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const authToken = useAppStore((state) => state.authToken);
-  const [storeHydrated, setStoreHydrated] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return useAppStore.persist?.hasHydrated?.() ?? true;
-  });
+  const [storeHydrated, setStoreHydrated] = useState(false);
 
   useEffect(() => {
-    return useAppStore.persist?.onFinishHydration?.(() => setStoreHydrated(true));
+    const markHydrated = () => setStoreHydrated(true);
+    if (useAppStore.persist?.hasHydrated?.()) {
+      queueMicrotask(markHydrated);
+    }
+    return useAppStore.persist?.onFinishHydration?.(markHydrated);
   }, []);
 
   useEffect(() => {
@@ -26,7 +27,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [authToken, router, storeHydrated]);
 
-  if (isBackendEnabled() && !storeHydrated) {
+  if (!storeHydrated) {
     return <div className="min-h-screen bg-slate-50" />;
   }
 

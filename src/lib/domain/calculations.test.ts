@@ -4,8 +4,9 @@ import {
   calculateEquipmentTimesheetCost,
   calculateGasoilStock,
   calculatePersonnelTimesheetDue,
+  buildDashboardSummary,
 } from "./calculations";
-import type { CaisseTransaction, EquipmentTimesheet, GasoilEntry, GasoilExit, PersonnelTimesheet } from "./types";
+import type { CaisseTransaction, EquipmentTimesheet, GasoilEntry, GasoilExit, PersonnelTimesheet, Production } from "./types";
 
 describe("calculs caisse", () => {
   it("ignore les transactions non validees dans le solde officiel", () => {
@@ -149,5 +150,55 @@ describe("calculs personnel", () => {
     };
 
     expect(calculatePersonnelTimesheetDue(timesheet)).toBe(180);
+  });
+});
+
+describe("dashboard production", () => {
+  it("ajoute les quantites, rendements et couts de production officiels", () => {
+    const productions: Production[] = [
+      {
+        id: "prod-1",
+        chantierId: "c1",
+        date: "2026-06-01",
+        voie: "VOIE1",
+        workType: "Deblai",
+        quantity: 450,
+        unit: "m3",
+        hours: 9,
+        totalAllocatedCost: 9000,
+        status: "valide",
+      },
+      {
+        id: "prod-2",
+        chantierId: "c1",
+        date: "2026-06-02",
+        voie: "VOIE2",
+        workType: "Reglage",
+        quantity: 100,
+        unit: "m2",
+        hours: 2,
+        totalAllocatedCost: 1000,
+        status: "soumis",
+      },
+    ];
+
+    const summary = buildDashboardSummary({
+      chantierId: "c1",
+      transactions: [],
+      gasoilEntries: [],
+      gasoilExits: [],
+      personnelTimesheets: [],
+      personnelAdvances: [],
+      equipment: [],
+      equipmentTimesheets: [],
+      productions,
+      highPaymentThreshold: 30000,
+    });
+
+    expect(summary.productionQuantity).toBe(450);
+    expect(summary.productionHours).toBe(9);
+    expect(summary.productionCost).toBe(9000);
+    expect(summary.productionRendement).toBe(50);
+    expect(summary.productionCostPerUnit).toBe(20);
   });
 });

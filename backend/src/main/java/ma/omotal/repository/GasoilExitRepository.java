@@ -1,6 +1,7 @@
 package ma.omotal.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import ma.omotal.domain.GasoilExitEntity;
 import ma.omotal.domain.enums.OperationStatus;
@@ -12,4 +13,6 @@ public interface GasoilExitRepository extends JpaRepository<GasoilExitEntity, UU
   List<GasoilExitEntity> findByChantierIdIn(List<UUID> chantierIds);
 
   List<GasoilExitEntity> findByStatus(OperationStatus status);
+
+  Optional<GasoilExitEntity> findByChantierIdAndExitNumber(UUID chantierId, String exitNumber);
 }

@@ -46,7 +46,7 @@ export default function BqPage() {
       />
       <section className="mb-6 grid gap-4 md:grid-cols-2">
         <Card className="flex items-center gap-3 p-4 text-sm text-slate-600">
-          <span className="rounded-xl bg-orange-50 p-2 text-orange-600">
+          <span className="rounded-lg bg-orange-50 p-2 text-orange-600">
             <TrendingUp className="size-5" />
           </span>
           Montant realise : <strong className="text-slate-950">{formatMoney(realisedAmount)}</strong>

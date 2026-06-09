@@ -34,9 +34,9 @@ export function DocumentUploader({ chantierId, module, targetType, targetId, com
   }
 
   return (
-    <div className={compact ? "space-y-2" : "rounded-xl border border-slate-200 bg-slate-50 p-3"}>
+    <div className={compact ? "space-y-2" : "rounded-lg border border-slate-200 bg-slate-50 p-3"}>
       <div className="flex flex-wrap items-center gap-2">
-        <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 hover:border-orange-200 hover:bg-orange-50">
+        <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 hover:border-orange-200 hover:bg-orange-50">
           <FileUp className="size-4" />
           Justificatif
           <input
@@ -73,7 +73,7 @@ export function DocumentUploader({ chantierId, module, targetType, targetId, com
         <div className="flex flex-wrap gap-2">
           {linkedDocuments.map((document) => (
             <button
-              className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[#12355b] ring-1 ring-slate-200"
+              className="inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1 text-xs font-bold text-[#12355b] ring-1 ring-slate-200"
               key={document.id}
               onClick={() => void download(document.id, document.fileName)}
               type="button"

@@ -11,8 +11,8 @@ describe("mobile app navigation", () => {
       "Pointage engins",
       "Production mobile",
       "Historique mobile",
-      "Alertes",
     ]));
+    expect(labels).not.toContain("Alertes");
   });
 
   it("keeps sensitive finance, salary and margin pages away from the pointeur", () => {
@@ -20,7 +20,7 @@ describe("mobile app navigation", () => {
 
     expect(labels).not.toContain("Caisse");
     expect(labels).not.toContain("Personnel");
-    expect(labels).not.toContain("BQ & Rentabilite");
+    expect(labels).not.toContain("BQ / Rentabilite");
     expect(labels).not.toContain("Rapports");
   });
 
@@ -28,10 +28,10 @@ describe("mobile app navigation", () => {
     const labels = getMobileVisibleNavItems("super_admin").map((item) => item.label);
 
     expect(labels).toEqual(expect.arrayContaining([
-      "Tableau de bord",
+      "Cockpit global",
       "Caisse",
       "Rapports",
-      "Administration",
+      "Utilisateurs & parametres",
       "Sortie gasoil",
     ]));
   });

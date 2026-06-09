@@ -35,14 +35,14 @@ export function MobileShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-24">
+    <div className="min-h-screen overflow-x-hidden bg-[#f5f7fb] pb-24">
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white px-4 py-3">
         <div className="mx-auto flex max-w-md items-center justify-between gap-3">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wide text-orange-600">Bonjour {currentUser.name}</span>
+            <span className="text-xs font-bold uppercase text-orange-600">Bonjour {currentUser.name}</span>
             <h1 className="text-lg font-black text-slate-950">{chantier?.name ?? "Chantier"}</h1>
           </div>
-          <div className="flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+          <div className="flex items-center gap-1 rounded-md bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
             <Wifi className="size-3.5" />
             Sync
           </div>

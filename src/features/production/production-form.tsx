@@ -106,8 +106,8 @@ export function ProductionForm() {
           <Input inputMode="decimal" placeholder="Logement chauffeur" type="number" {...register("allocatedDriverExpenses")} />
           <Input inputMode="decimal" placeholder="Autres frais" type="number" {...register("allocatedOtherCost")} />
         </div>
-        <div className="rounded-2xl bg-orange-50 p-4">
-          <span className="text-xs font-black uppercase tracking-wide text-orange-700">Quantite calculee</span>
+        <div className="rounded-lg bg-orange-50 p-4">
+          <span className="text-xs font-black uppercase text-orange-700">Quantite calculee</span>
           <strong className="mt-1 block text-3xl font-black text-slate-950">
             {formatNumber(quantity, unit)}
           </strong>

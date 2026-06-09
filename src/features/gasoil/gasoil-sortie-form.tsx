@@ -74,8 +74,8 @@ export function GasoilSortieForm({ compact = false }: { compact?: boolean }) {
           <Textarea placeholder="Optionnel : jauge, bon, remarque terrain..." {...register("observation")} />
         </Field>
 
-        <div className="rounded-2xl bg-slate-50 p-4">
-          <span className="text-xs font-black uppercase tracking-wide text-slate-500">Montant calcule</span>
+        <div className="rounded-lg bg-slate-50 p-4">
+          <span className="text-xs font-black uppercase text-slate-500">Montant calcule</span>
           <strong className="mt-1 block text-2xl font-black text-slate-950">{formatMoney(total)}</strong>
           <p className="mt-1 text-xs text-slate-500">Prix provisoire utilise : 11,8 DH/L. Sera remplace par prix moyen backend.</p>
         </div>
@@ -96,7 +96,7 @@ export function GasoilSortieForm({ compact = false }: { compact?: boolean }) {
         </div>
 
         {mutation.isSuccess ? (
-          <p className="rounded-xl bg-emerald-50 p-3 text-sm font-bold text-emerald-700">
+          <p className="rounded-lg bg-emerald-50 p-3 text-sm font-bold text-emerald-700">
             Sortie gasoil soumise. Elle apparaitra dans les validations.
           </p>
         ) : null}

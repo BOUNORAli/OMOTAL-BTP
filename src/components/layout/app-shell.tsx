@@ -32,12 +32,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen overflow-x-hidden bg-[#f5f7fb]">
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 overflow-x-hidden">
           <Topbar />
-          <main className="mx-auto w-full max-w-[1500px] p-4 lg:p-6">{children}</main>
+          <main className="w-full px-4 py-4 lg:px-5">{children}</main>
         </div>
       </div>
       <MobileAppNav />

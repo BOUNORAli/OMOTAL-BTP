@@ -1,29 +1,38 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   AlertTriangle,
   Building2,
-  Cloud,
-  Database,
+  CheckCircle2,
+  ClipboardCheck,
   FileSpreadsheet,
   Fuel,
-  Gauge,
   HardHat,
   Smartphone,
-  UploadCloud,
+  TrendingUp,
   WalletCards,
-  Workflow,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { LoadingState } from "@/components/common/state-blocks";
+import { DataGrid, type DataGridColumn } from "@/components/common/data-grid";
 import { PageHeader } from "@/components/common/page-header";
-import { KpiCard } from "@/components/domain/kpi-card";
+import { ErrorState, LoadingState } from "@/components/common/state-blocks";
+import { DetailDrawer } from "@/components/erp/detail-drawer";
+import { MetricStrip } from "@/components/erp/metric-strip";
+import { StatusPill } from "@/components/erp/status-pill";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { useGlobalDashboard } from "@/hooks/use-app-data";
+import type { Chantier } from "@/lib/domain/types";
 import { formatMoney, formatNumber } from "@/lib/format";
+
+type DashboardChantier = Chantier & {
+  expensesMonth: number;
+  gasoilStock: number;
+  alerts: number;
+  production: number;
+};
 
 const expensesData = [
   { category: "Gasoil", amount: 11800 },
@@ -32,208 +41,235 @@ const expensesData = [
   { category: "Divers", amount: 3200 },
 ];
 
-const moduleStatus = [
-  { label: "Import Excel", detail: "Preview + commit", status: "Actif", tone: "green" as const, icon: FileSpreadsheet },
-  { label: "Production", detail: "Decapage / Reglage / CANA", status: "Actif", tone: "green" as const, icon: HardHat },
-  { label: "Mobile terrain", detail: "Brouillons locaux", status: "Pret", tone: "blue" as const, icon: Smartphone },
-  { label: "Referentiels", detail: "Listes par chantier", status: "Actif", tone: "green" as const, icon: Database },
-  { label: "Cloud", detail: "Vercel / Railway", status: "Configure", tone: "orange" as const, icon: Cloud },
-];
-
-const importPipeline = [
-  { label: "Situation chantier", rows: "Finance, stock, gasoil", state: "Source officielle" },
-  { label: "Rendements CANA", rows: "Decapage, reglage, tranchees", state: "Allocation couts" },
-  { label: "Controle anomalies", rows: "#REF!, #VALUE!, doublons", state: "Bloquant si critique" },
+const todayActions = [
+  { label: "Imports a verifier", value: "2", href: "/app/imports", tone: "warning" as const, icon: FileSpreadsheet },
+  { label: "Validations sensibles", value: "5", href: "/app/validations", tone: "danger" as const, icon: ClipboardCheck },
+  { label: "Alertes critiques", value: "1", href: "/app/alertes", tone: "danger" as const, icon: AlertTriangle },
+  { label: "Saisies terrain", value: "12", href: "/mobile/accueil", tone: "info" as const, icon: Smartphone },
 ];
 
 export default function DashboardPage() {
-  const { data, isLoading } = useGlobalDashboard();
+  const { data, error, isLoading } = useGlobalDashboard();
+  const [selected, setSelected] = useState<DashboardChantier | null>(null);
 
-  if (isLoading || !data) {
-    return <LoadingState label="Preparation du tableau de bord global..." />;
+  if (isLoading) {
+    return <LoadingState label="Preparation du cockpit global..." />;
   }
+  if (error || !data) {
+    return <ErrorState message={error instanceof Error ? error.message : "Dashboard indisponible pour le moment."} />;
+  }
+
+  const columns: DataGridColumn<DashboardChantier>[] = [
+    {
+      header: "Chantier",
+      cell: (row) => (
+        <span>
+          <strong className="block text-slate-950">{row.name}</strong>
+          <span className="text-xs font-semibold text-slate-500">{row.code} - {row.location}</span>
+        </span>
+      ),
+      sortValue: (row) => row.name,
+      width: "28%",
+    },
+    { header: "Client", cell: (row) => row.client, sortValue: (row) => row.client },
+    {
+      header: "Depenses",
+      align: "right",
+      cell: (row) => <span className="font-black text-slate-950">{formatMoney(row.expensesMonth)}</span>,
+      sortValue: (row) => row.expensesMonth,
+    },
+    {
+      header: "Gasoil",
+      align: "right",
+      cell: (row) => <span className="font-black text-blue-700">{formatNumber(row.gasoilStock, "L")}</span>,
+      sortValue: (row) => row.gasoilStock,
+    },
+    {
+      header: "Production",
+      align: "right",
+      cell: (row) => <span className="font-black text-emerald-700">{formatNumber(row.production, "u")}</span>,
+      sortValue: (row) => row.production,
+    },
+    {
+      header: "Anomalies",
+      align: "center",
+      cell: (row) => <StatusPill tone={row.alerts > 0 ? "warning" : "success"}>{row.alerts}</StatusPill>,
+      sortValue: (row) => row.alerts,
+    },
+    {
+      header: "Statut",
+      cell: (row) => <StatusPill tone={row.status === "en_cours" ? "success" : "warning"}>{row.status}</StatusPill>,
+      sortValue: (row) => row.status,
+    },
+  ];
 
   return (
     <>
       <PageHeader
         actions={
           <>
-            <Button asChild variant="secondary">
+            <Button asChild size="sm" variant="secondary">
               <Link href="/app/imports">
                 <FileSpreadsheet className="size-4" />
-                Import Excel
+                Imports
               </Link>
             </Button>
-            <Button asChild>
-              <Link href="/mobile/accueil">
-                <Smartphone className="size-4" />
-                Terrain
+            <Button asChild size="sm">
+              <Link href="/app/validations">
+                <ClipboardCheck className="size-4" />
+                Validations
               </Link>
             </Button>
           </>
         }
-        description="Pilotage multi-chantiers avec reprise Excel controlee, production, gasoil, caisse et terrain mobile."
-        eyebrow="OMOTAL V1 multi-chantiers"
-        title="Cockpit exploitation"
+        description="Vue consolidee direction/bureau : chantiers, finance, gasoil, production, alertes et actions a traiter."
+        eyebrow="Pilotage"
+        title="Cockpit global"
       />
 
-      <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-        <KpiCard icon={<Building2 className="size-4" />} label="Chantiers" value={`${data.activeChantiers}/${data.chantiers.length}`} />
-        <KpiCard
-          icon={<WalletCards className="size-4" />}
-          label="Depenses"
-          tone="warning"
-          value={formatMoney(data.totalExpenses)}
+      <MetricStrip
+        items={[
+          { icon: Building2, label: "Chantiers actifs", value: `${data.activeChantiers}/${data.chantiers.length}`, tone: "info" },
+          { icon: WalletCards, label: "Depenses", value: formatMoney(data.totalExpenses), tone: "warning" },
+          { icon: CheckCircle2, label: "Solde caisse", value: formatMoney(data.cashBalance), tone: "success" },
+          { icon: Fuel, label: "Stock gasoil", value: formatNumber(data.gasoilStock, "L"), tone: "info" },
+          { icon: ClipboardCheck, label: "Validations", value: data.pendingValidations, tone: data.pendingValidations ? "warning" : "neutral" },
+          { icon: AlertTriangle, label: "Alertes critiques", value: data.criticalAlerts, tone: data.criticalAlerts ? "danger" : "success" },
+        ]}
+      />
+
+      <section className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <DataGrid
+          columns={columns}
+          onRowClick={setSelected}
+          rows={data.chantiers}
+          selectedRowId={selected?.id}
+          subtitle="Cliquez une ligne pour ouvrir le cockpit chantier"
+          title="Comparatif multi-chantiers"
         />
-        <KpiCard label="Solde caisse" tone="success" value={formatMoney(data.cashBalance)} />
-        <KpiCard icon={<Fuel className="size-4" />} label="Stock gasoil" tone="blue" value={formatNumber(data.gasoilStock, "L")} />
-        <KpiCard icon={<Gauge className="size-4" />} label="Validations" value={String(data.pendingValidations)} />
-        <KpiCard
-          icon={<AlertTriangle className="size-4" />}
-          label="Alertes"
-          tone={data.criticalAlerts > 0 ? "danger" : "normal"}
-          value={String(data.criticalAlerts)}
-        />
-      </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <Card className="p-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-500">Charges</p>
-              <h2 className="text-lg font-black text-slate-950">Depenses par categorie</h2>
-            </div>
-            <Badge tone="orange">Mois courant</Badge>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer height="100%" width="100%">
-              <BarChart data={expensesData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="category" />
-                <YAxis />
-                <Tooltip formatter={(value) => formatMoney(Number(value))} />
-                <Bar dataKey="amount" fill="#f28c28" radius={[10, 10, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-500">Socle actif</p>
-              <h2 className="text-lg font-black text-slate-950">Modules V1</h2>
-            </div>
-            <Badge tone="green">Multi-chantiers</Badge>
-          </div>
-          <div className="grid gap-2">
-            {moduleStatus.map((module) => {
-              const Icon = module.icon;
-              return (
-                <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2.5" key={module.label}>
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="rounded-lg bg-slate-100 p-2 text-slate-700">
-                      <Icon className="size-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <strong className="block truncate text-sm text-slate-950">{module.label}</strong>
-                      <span className="block truncate text-xs text-slate-500">{module.detail}</span>
-                    </div>
-                  </div>
-                  <Badge tone={module.tone}>{module.status}</Badge>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      </section>
-
-      <section className="mt-6 grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <Card className="p-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-500">Transition Excel</p>
-              <h2 className="text-lg font-black text-slate-950">File import controlee</h2>
-            </div>
-            <Button asChild size="sm" variant="secondary">
-              <Link href="/app/imports">
-                <UploadCloud className="size-4" />
-                Ouvrir
-              </Link>
-            </Button>
-          </div>
-          <div className="grid gap-3">
-            {importPipeline.map((item) => (
-              <div className="grid gap-3 rounded-lg border border-slate-100 p-3 md:grid-cols-[1fr_auto]" key={item.label}>
-                <div>
-                  <strong className="text-sm text-slate-950">{item.label}</strong>
-                  <p className="mt-1 text-xs text-slate-500">{item.rows}</p>
-                </div>
-                <Badge tone="blue">{item.state}</Badge>
+        <div className="grid gap-4">
+          <Card className="p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase text-slate-500">Actions du jour</p>
+                <h2 className="text-base font-black text-slate-950">A traiter bureau</h2>
               </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-black uppercase tracking-wide text-slate-500">Chantiers</p>
-              <h2 className="text-lg font-black text-slate-950">Vue consolidee</h2>
+              <StatusPill tone="warning">{todayActions.length}</StatusPill>
             </div>
-            <Button asChild size="sm" variant="secondary">
-              <Link href="/app/chantiers">Liste</Link>
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {data.chantiers.map((chantier) => (
-              <Link
-                className="block rounded-lg border border-slate-100 p-3 transition hover:border-orange-200 hover:bg-orange-50"
-                href={`/app/chantiers/${chantier.id}`}
-                key={chantier.id}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <strong className="block text-slate-950">{chantier.name}</strong>
-                    <span className="text-sm text-slate-500">{chantier.code}</span>
-                  </div>
-                  <Badge tone={chantier.alerts > 0 ? "orange" : "green"}>{chantier.alerts} alertes</Badge>
-                </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-600">
-                  <span>
-                    <strong className="block text-slate-950">{formatMoney(chantier.expensesMonth)}</strong>
-                    charges
-                  </span>
-                  <span>
-                    <strong className="block text-slate-950">{formatNumber(chantier.gasoilStock, "L")}</strong>
-                    gasoil
-                  </span>
-                  <span>
-                    <strong className="block text-slate-950">{formatNumber(chantier.production, "u")}</strong>
-                    production
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </Card>
-      </section>
+            <div className="grid gap-2">
+              {todayActions.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2.5 transition hover:border-orange-300 hover:bg-orange-50"
+                    href={item.href}
+                    key={item.label}
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="grid size-9 place-items-center rounded-lg bg-slate-100 text-slate-700">
+                        <Icon className="size-4" />
+                      </span>
+                      <strong className="truncate text-sm text-slate-950">{item.label}</strong>
+                    </span>
+                    <StatusPill tone={item.tone}>{item.value}</StatusPill>
+                  </Link>
+                );
+              })}
+            </div>
+          </Card>
 
-      <section className="mt-6 rounded-lg border border-orange-100 bg-orange-50 p-5">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-wide text-orange-700">Workflow</p>
-            <h2 className="text-xl font-black text-slate-950">Operations sensibles</h2>
-            <p className="mt-1 text-sm text-slate-600">Gasoil, pointage engins, production, caisse et grosses depenses.</p>
-          </div>
-          <Button asChild>
-            <Link href="/app/validations">
-              Ouvrir validations
-              <Workflow className="size-4" />
-            </Link>
-          </Button>
+          <Card className="p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase text-slate-500">Charges</p>
+                <h2 className="text-base font-black text-slate-950">Depenses par categorie</h2>
+              </div>
+              <StatusPill tone="info">Mois</StatusPill>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer height="100%" width="100%">
+                <BarChart data={expensesData}>
+                  <CartesianGrid stroke="#e2e8f0" vertical={false} />
+                  <XAxis dataKey="category" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(value) => formatMoney(Number(value))} />
+                  <Bar dataKey="amount" fill="#f28c28" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
         </div>
       </section>
+
+      <section className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="grid gap-3 md:grid-cols-4">
+          {[
+            { label: "Finance", value: "Caisse, fournisseurs, paiements", icon: WalletCards },
+            { label: "Operations", value: "Production, engins, gasoil", icon: HardHat },
+            { label: "Controle", value: "Imports, validations, rapports", icon: ClipboardCheck },
+            { label: "Rentabilite", value: "BQ, couts, marges", icon: TrendingUp },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <div className="flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2" key={item.label}>
+                <span className="grid size-9 place-items-center rounded-lg bg-slate-100 text-slate-700">
+                  <Icon className="size-4" />
+                </span>
+                <span className="min-w-0">
+                  <strong className="block truncate text-sm text-slate-950">{item.label}</strong>
+                  <span className="block truncate text-xs text-slate-500">{item.value}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <DetailDrawer
+        onOpenChange={(open) => !open && setSelected(null)}
+        open={Boolean(selected)}
+        subtitle={selected ? `${selected.code} - ${selected.location}` : undefined}
+        title={selected?.name ?? "Chantier"}
+      >
+        {selected ? (
+          <div className="space-y-4">
+            <MetricStrip
+              items={[
+                { label: "Depenses", value: formatMoney(selected.expensesMonth), tone: "warning" },
+                { label: "Gasoil", value: formatNumber(selected.gasoilStock, "L"), tone: "info" },
+                { label: "Production", value: formatNumber(selected.production, "u"), tone: "success" },
+                { label: "Alertes", value: selected.alerts, tone: selected.alerts ? "danger" : "success" },
+              ]}
+            />
+            <div className="rounded-lg border border-slate-200 p-4">
+              <h3 className="font-black text-slate-950">Identite chantier</h3>
+              <dl className="mt-3 grid gap-2 text-sm">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-slate-500">Client</dt>
+                  <dd className="font-bold text-slate-950">{selected.client}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-slate-500">Statut</dt>
+                  <dd><StatusPill tone={selected.status === "en_cours" ? "success" : "warning"}>{selected.status}</StatusPill></dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-slate-500">Marche HT</dt>
+                  <dd className="font-bold text-slate-950">{formatMoney(selected.marketAmountHt ?? 0)}</dd>
+                </div>
+              </dl>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild size="sm">
+                <Link href={`/app/chantiers/${selected.id}`}>Ouvrir cockpit chantier</Link>
+              </Button>
+              <Button asChild size="sm" variant="secondary">
+                <Link href="/app/rapports">Exporter</Link>
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </DetailDrawer>
     </>
   );
 }

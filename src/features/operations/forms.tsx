@@ -28,15 +28,15 @@ const today = () => new Date().toISOString().slice(0, 10);
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="space-y-1.5">
-      <span className="text-xs font-black uppercase tracking-wide text-slate-500">{label}</span>
+      <span className="text-xs font-black uppercase text-slate-500">{label}</span>
       {children}
     </label>
   );
 }
 
 function FormMessage({ error, success }: { error?: Error | null; success?: boolean }) {
-  if (error) return <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{error.message}</p>;
-  if (success) return <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">Operation enregistree.</p>;
+  if (error) return <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{error.message}</p>;
+  if (success) return <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">Operation enregistree.</p>;
   return null;
 }
 

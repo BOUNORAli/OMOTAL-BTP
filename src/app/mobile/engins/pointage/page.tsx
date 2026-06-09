@@ -12,8 +12,8 @@ export default function MobilePointageEnginsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-600">Mobile terrain</p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Pointage engins</h1>
+        <p className="text-xs font-black uppercase text-orange-600">Mobile terrain</p>
+        <h1 className="mt-2 text-2xl font-black text-slate-950">Pointage engins</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">Saisir les heures rapidement puis soumettre la journee.</p>
       </div>
       <div className="space-y-3">
@@ -24,7 +24,7 @@ export default function MobilePointageEnginsPage() {
                 <strong className="block text-slate-950">{item.designation}</strong>
                 <span className="text-sm text-slate-500">{item.usualDriver ?? "Chauffeur a renseigner"}</span>
               </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{item.billingMode}</span>
+              <span className="rounded-md bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{item.billingMode}</span>
             </div>
             <div className="grid grid-cols-[1fr_auto] gap-2">
               <Input inputMode="decimal" placeholder="Heures" type="number" />

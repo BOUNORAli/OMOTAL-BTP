@@ -1,16 +1,16 @@
-import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/erp/status-pill";
 import { statusLabels } from "@/lib/domain/labels";
 import type { OperationStatus } from "@/lib/domain/types";
 
-const statusTone: Record<OperationStatus, "slate" | "green" | "orange" | "red" | "blue" | "yellow"> = {
-  brouillon: "slate",
-  soumis: "yellow",
-  valide: "green",
-  rejete: "red",
-  annule: "orange",
-  verrouille: "blue",
+const statusTone: Record<OperationStatus, "neutral" | "success" | "warning" | "danger" | "info"> = {
+  brouillon: "neutral",
+  soumis: "warning",
+  valide: "success",
+  rejete: "danger",
+  annule: "neutral",
+  verrouille: "info",
 };
 
 export function StatusBadge({ status }: { status: OperationStatus }) {
-  return <Badge tone={statusTone[status]}>{statusLabels[status]}</Badge>;
+  return <StatusPill tone={statusTone[status]}>{statusLabels[status]}</StatusPill>;
 }

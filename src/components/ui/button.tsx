@@ -25,10 +25,10 @@ export function Button({
   return (
     <Comp
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:pointer-events-none disabled:opacity-50",
-        size === "sm" && "h-9 px-3 text-sm",
-        size === "md" && "h-11 px-4 text-sm",
-        size === "lg" && "h-14 px-5 text-base",
+        "inline-flex items-center justify-center gap-2 rounded-lg font-bold transition focus:outline-none focus:ring-2 focus:ring-orange-400 disabled:pointer-events-none disabled:opacity-50",
+        size === "sm" && "h-8 px-2.5 text-xs",
+        size === "md" && "h-10 px-3 text-sm",
+        size === "lg" && "h-12 px-4 text-base",
         variant === "primary" && "bg-[#12355b] text-white shadow-sm hover:bg-[#0d2948]",
         variant === "secondary" && "border border-slate-200 bg-white text-slate-900 hover:bg-slate-50",
         variant === "ghost" && "text-slate-600 hover:bg-slate-100 hover:text-slate-950",

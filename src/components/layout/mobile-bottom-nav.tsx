@@ -25,7 +25,7 @@ export function MobileBottomNav() {
           return (
             <Link
               className={cn(
-                "flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-bold text-slate-500",
+                "flex flex-col items-center gap-1 rounded-lg px-2 py-2 text-[11px] font-bold text-slate-500",
                 active && "bg-orange-50 text-orange-700",
               )}
               href={item.href}

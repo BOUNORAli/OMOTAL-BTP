@@ -33,7 +33,7 @@ export default function TransportPage() {
         title="Transport"
       />
       <Card className="mb-6 flex items-center gap-3 p-4 text-sm text-slate-600">
-        <span className="rounded-xl bg-orange-50 p-2 text-orange-600">
+        <span className="rounded-lg bg-orange-50 p-2 text-orange-600">
           <Truck className="size-5" />
         </span>
         Cout transport suivi : <strong className="text-slate-950">{formatMoney(total)}</strong>

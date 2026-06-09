@@ -101,14 +101,14 @@ export default function AdminPage() {
           return (
             <button
               className={cn(
-                "flex min-h-24 items-center gap-3 rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-orange-200 hover:bg-orange-50/40",
+                "flex min-h-24 items-center gap-3 rounded-lg border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-orange-200 hover:bg-orange-50/40",
                 activeTab === item.id && "border-orange-200 bg-orange-50 text-orange-700",
               )}
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               type="button"
             >
-              <span className={cn("rounded-xl bg-slate-100 p-2 text-slate-600", activeTab === item.id && "bg-white text-orange-700")}>
+              <span className={cn("rounded-lg bg-slate-100 p-2 text-slate-600", activeTab === item.id && "bg-white text-orange-700")}>
                 <Icon className="size-5" />
               </span>
               <span>
@@ -133,7 +133,7 @@ export default function AdminPage() {
       {activeTab === "roles" && (
         <section className="grid gap-6">
           <Card className="flex items-center gap-3 p-4 text-sm text-slate-600">
-            <span className="rounded-xl bg-blue-50 p-2 text-blue-700">
+            <span className="rounded-lg bg-blue-50 p-2 text-blue-700">
               <Settings className="size-5" />
             </span>
             Les permissions frontend masquent les ecrans, et les endpoints backend restent la source de verite securite.

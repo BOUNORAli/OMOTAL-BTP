@@ -4,8 +4,8 @@ export default function MobileHistoriquePage() {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-600">Mobile terrain</p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Historique</h1>
+        <p className="text-xs font-black uppercase text-orange-600">Mobile terrain</p>
+        <h1 className="mt-2 text-2xl font-black text-slate-950">Historique</h1>
       </div>
       {["Sortie gasoil soumise", "Pointage pelle valide", "Production voie A validee"].map((item) => (
         <Card className="p-4" key={item}>

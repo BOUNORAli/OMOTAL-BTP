@@ -26,6 +26,9 @@ export function getMobileVisibleNavItems(role: Role) {
       byHref.set(item.href, item);
     }
   }
+  if (role === "pointeur") {
+    return Array.from(byHref.values());
+  }
   for (const item of appNavItems) {
     if (can(role, item.permission)) {
       byHref.set(item.href, item);
@@ -91,7 +94,7 @@ export function MobileAppNav() {
       >
         <div className="flex items-center justify-between border-b border-slate-100 p-4">
           <Link className="flex items-center gap-3" href="/app/dashboard" onClick={() => setOpen(false)}>
-            <span className="flex size-10 items-center justify-center rounded-xl bg-[#12355b] text-xs font-black text-white">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-[#12355b] text-xs font-black text-white">
               OT
             </span>
             <div>
@@ -101,7 +104,7 @@ export function MobileAppNav() {
           </Link>
           <button
             aria-label="Fermer la navigation"
-            className="grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-600"
+            className="grid size-10 place-items-center rounded-lg border border-slate-200 text-slate-600"
             onClick={() => setOpen(false)}
             type="button"
           >
@@ -116,7 +119,7 @@ export function MobileAppNav() {
             return (
               <Link
                 className={cn(
-                  "flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100",
+                  "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100",
                   active && "bg-orange-50 text-orange-700 ring-1 ring-orange-100",
                 )}
                 href={item.href}
@@ -131,11 +134,11 @@ export function MobileAppNav() {
         </nav>
 
         <div className="border-t border-slate-100 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Connecte</p>
+          <p className="text-xs font-semibold uppercase text-slate-400">Connecte</p>
           <strong className="mt-1 block text-sm text-slate-950">{currentUser.name}</strong>
           <span className="text-xs text-slate-500">{roleLabels[currentUser.role]}</span>
           <button
-            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 text-sm font-bold text-red-700"
+            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 text-sm font-bold text-red-700"
             onClick={() => {
               clearSession();
               setOpen(false);
